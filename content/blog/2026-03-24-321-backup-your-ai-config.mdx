@@ -1,0 +1,71 @@
+---
+title: "3-2-1 Backup Your AI Config"
+publishedAt: "2026-03-24"
+summary: "Why I moved my Claude Code skills and global config into a git repo, and the symlink setup that keeps everything in sync."
+tags: ["claude-code", "dotfiles", "automation", "devtools"]
+draft: true
+---
+
+My Claude Code setup has gotten serious. Six custom skills, a global instruction file that's over 100 lines, plugin settings. All of it living in `~/.claude/` on a single machine with zero version control.
+
+That's a problem I would yell at someone else for having.
+
+## The 3-2-1 Rule (Applied to AI Config)
+
+The 3-2-1 backup rule is simple: three copies of your data, on two different types of media, with one offsite. It's usually applied to photos and databases, not dotfiles. But the principle scales down. If your AI coding assistant has accumulated real configuration (instructions, skills, custom workflows), that config has value. Losing it means rebuilding from memory, which means rebuilding wrong.
+
+I had one copy. On one machine. Zero offsite. That's a 1-1-0, which is another way of saying "not backed up."
+
+## What I Actually Did
+
+I already had a `gutils` repo for shell config, scripts, and other machine-setup stuff. So the move was straightforward: copy the portable files into `gutils/claude-code/`, then replace the originals with symlinks.
+
+```bash title="the directory structure"
+~/Developer/gutils/claude-code/
+  CLAUDE.md          # global instructions
+  settings.json      # plugin config
+  setup.sh           # symlink installer
+  skills/
+    blog-draft/
+    sam-style/
+    work-log/
+    ...
+```
+
+The key insight: not everything in `~/.claude/` is portable. Conversation history, session state, project-level memory (which contains absolute paths) all stay machine-local. The stuff worth syncing is the config that defines *how* Claude works with me, not the artifacts of it working.
+
+| Synced (in gutils) | Machine-local (stays in ~/.claude/) |
+|---------------------|-------------------------------------|
+| `CLAUDE.md` | `projects/`, `memory/` |
+| `settings.json` | `history.jsonl`, `sessions/` |
+| `skills/` | `plugins/`, `cache/`, `session-env/` |
+| `setup.sh` | `plans/`, `debug/`, `file-history/` |
+
+## The Setup Script
+
+A small bash script handles the linking on any new machine. It backs up existing files before overwriting, so nothing gets destroyed if you already have a config in place.
+
+```bash title="setup.sh (the interesting parts)"
+for file in CLAUDE.md settings.json; do
+  if [ -e "$CLAUDE_DIR/$file" ] && [ ! -L "$CLAUDE_DIR/$file" ]; then
+    mv "$CLAUDE_DIR/$file" "$CLAUDE_DIR/$file.bak"
+  fi
+  ln -sf "$SCRIPT_DIR/$file" "$CLAUDE_DIR/$file"
+done
+```
+
+Same pattern for each skill directory. Run it once, everything links up. Idempotent, so running it again after adding a new skill just picks up the new one.
+
+## Why This Matters More Than It Looks
+
+The obvious benefit is backup. But the real one is that my AI config is now part of my standard machine-setup workflow. Clone gutils, run the scripts, and a new machine has my shell, my git config, *and* my AI assistant config. The agent boots up already knowing how I work, what voice to write in, and which skills to run after commits.
+
+The thing that actually prompted this: one of my skills (blog-draft) was generating frontmatter with `unpublished: true`, but my blog's rendering pipeline filters on `draft: true`. Six draft posts were showing up in the public feed. The skill and the app code had drifted apart, and since the skill wasn't in version control, there was no history to trace. Version-controlling the skills means changes are diffable, reviewable, and (critically) greppable when something breaks.
+
+One other thing that surprised me: Claude Code's per-project memory (`~/.claude/projects/`) doesn't transfer between machines. It's keyed to absolute filesystem paths, so it's inherently local. That means the README in the gutils repo doubles as the cross-machine knowledge base. On a fresh machine, I can point Claude at `~/Developer/gutils/claude-code/README.md` and it has the full context for how everything fits together without needing any prior conversation history.
+
+That's the 3-2-1 applied: the files live on my machine, in a git repo, and pushed to GitHub. Two media types (local disk, remote git host), one offsite. Good enough for config that took weeks to dial in.
+
+## Wrap Up
+
+If you're building up Claude Code skills or a real CLAUDE.md, get them into version control. The setup is fifteen minutes of work and a bash script. The alternative is re-writing everything from scratch when your laptop decides it's had enough.
