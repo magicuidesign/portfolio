@@ -1,0 +1,64 @@
+---
+title: "Building a CI Health Audit Tool with Public GitHub Data"
+publishedAt: "2026-04-06"
+summary: "A scoring engine, CLI, and web app that generate personalized CI health reports for any GitHub org — built as a sales tool for Trunk."
+tags: ["python", "react", "fastapi", "github-api", "devrel", "trunk"]
+draft: true
+---
+
+Most engineering teams have no idea how their CI compares to anyone else's. They know it's slow, they know tests flake, but they've never seen a number attached to it. That's the gap this tool fills — a cold outreach asset that tells a prospect "your CI pass rate is 74%, the median is 91%" before they've ever heard of Trunk.
+
+The idea came out of a GTM sync: what if we could generate a personalized CI health report for any company using nothing but their public GitHub data? No install, no credentials, no sales call required. Just a score and some findings that are hard to ignore.
+
+## What it does
+
+`trunk-audit vercel` hits the GitHub API, pulls PRs, CI workflow runs, branch protection rules, and contributor data for an org's top public repos. It scores them across five dimensions — CI pass rate, PR cycle time, merge frequency, branch protection, and contributor activity — weighted into a 0–100 composite score benchmarked against (hardcoded, for now) Trunk customer data.
+
+The output is a report tailored to one of four personas: Engineering Manager, VP of Engineering, DevOps/Platform Engineer, or CTO. Same data, different framing. The EM sees blocked developer hours. The CTO sees estimated cost of CI failures and strategic risk.
+
+## The stack
+
+Three packages in a monorepo:
+
+- **`packages/scorer`** — Python. Async GitHub API client with httpx, metric calculators, scoring model, persona report builder. This is the shared core that both the CLI and web app consume.
+- **`packages/cli`** — Python CLI via Typer. Outputs to terminal (Rich tables), JSON, or self-contained HTML. Four persona-specific Jinja2 templates with distinct designs — the DevOps one has a terminal aesthetic with monospace fonts and dark theme, the CTO version uses amber accents and risk-level badges.
+- **`packages/web`** — FastAPI backend serving the scorer as REST, React + Tailwind frontend. Sidebar with org tabs, persona switcher, score visualization.
+
+```bash title="Running an audit"
+trunk-audit stripe --persona vp --output html -f report.html
+```
+
+## Scoring model
+
+Nothing fancy — linear normalization within each dimension's good-to-bad range, multiplied by weight. CI pass rate below 70% gets zero points. PR cycle time under 12 hours gets full marks. The weights are from the PRD:
+
+| Dimension | Weight | Full marks |
+|-----------|--------|-----------|
+| CI pass rate | 30% | >95% |
+| PR cycle time | 25% | <12hr |
+| Merge frequency | 20% | 5+/day |
+| Branch protection | 15% | Reviews + checks |
+| Contributor activity | 10% | >80% active |
+
+The interesting wrinkle: branch protection data always comes back empty through the public API because GitHub restricts it to repo admins. So every org scores 0/15 on that dimension. The report discloses this and frames it as "install Trunk to see the full picture."
+
+## Caching
+
+Two layers. API responses are cached to disk with a 1-hour TTL — this is mainly about not burning through GitHub's rate limit during demos. Full scored reports are cached separately with no expiry, so you can flip between orgs and personas instantly. A "Rerun Analysis" button bypasses the report cache and re-fetches everything.
+
+Without a token you get 60 requests/hour. With `GITHUB_TOKEN` set (no scopes needed, just authentication), you get 5,000. The tool works either way but the error messages are explicit about this when you hit the limit.
+
+## Flaky test detection
+
+<!-- TODO: expand this — the alternation heuristic is interesting enough to explain -->
+
+The scorer detects potential flaky tests by looking at workflow run history. If a workflow alternates between pass and fail at a rate above 30%, it gets flagged. Simple heuristic, but it caught 7 workflows in Vercel's public repos on the first run.
+
+## What's next
+
+- Programmatic PDF export for email attachments (right now HTML prints-to-PDF fine, but SDRs want a one-click thing)
+- A mocked "upgrade" toggle in the web app showing what the report looks like with post-install Trunk data
+- Batch generation for the SDR pilot — 5 target accounts, reports ready to attach to outreach sequences
+- The scoring model needs real benchmark data instead of hardcoded values. That's a data pipeline problem for later.
+
+The whole thing went from PRD to working prototype in one session. The persona templates took a second pass. It's rough in places but it runs against real orgs and produces reports that are specific enough to be useful — which is the whole point.

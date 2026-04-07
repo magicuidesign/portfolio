@@ -1,0 +1,101 @@
+---
+title: "Making Claude Code Skills Portable (So They Don't Live in One Repo)"
+publishedAt: "2026-04-06"
+summary: "Extracting Claude Code skills from a work repo, organizing them into a personal dotfiles-style repo with symlinks, and setting up a mirror for team-built skills."
+tags: ["claude-code", "skills", "dotfiles", "devrel", "automation"]
+draft: true
+---
+
+I've been building Claude Code skills at work for a few months now. Changelog generation, roadmap tracking, docs prep, release comms. They live in our main monorepo as a PR that isn't merging anytime soon, but I use them constantly. The problem: if I'm not in that repo, they don't exist.
+
+Skills in `.claude/skills/` are project-scoped. Skills in `~/.claude/skills/` are global. I wanted the global ones version-controlled in a repo I own, and I wanted the team-built ones backed up somewhere I control too. Took about 20 minutes to sort out.
+
+## The Setup
+
+I already had a [gutils](https://github.com/samgutentag/gutils) repo (my general-purpose dotfiles/scripts/config junk drawer) with a few skills symlinked in. The pattern was simple:
+
+```bash title="existing symlinks"
+~/.claude/skills/sam-style -> ~/Developer/gutils/claude-code/skills/sam-style
+~/.claude/skills/work-log  -> ~/Developer/gutils/claude-code/skills/work-log
+```
+
+So the gutils repo is the source of truth, and `~/.claude/skills/` just points at it. Claude Code doesn't care that it's a symlink. It discovers skills by scanning for `SKILL.md` files with the right frontmatter, and a symlink resolves the same as a real directory.
+
+## Extracting Skills from a PR
+
+The skills I needed were in [trunk-io/trunk2 PR #3247](https://github.com/trunk-io/trunk2/pull/3247), which adds a whole release-comms workflow. I pulled the full diff with `gh pr diff`, then wrote each file out locally. The PR had 17 files across 6 skill directories plus shared shell scripts.
+
+One thing that needed fixing: every skill referenced paths like `.claude/skills/shared/scripts/`, which is a project-relative path. Since these are now global skills living in `~/.claude/skills/`, I updated all references to `~/.claude/skills/shared/scripts/`. A bulk `sed` across the markdown files handled it.
+
+```bash title="path fix"
+find . -name '*.md' -exec sed -i '' \
+  's|`\.claude/skills/|`~/.claude/skills/|g' {} +
+```
+
+## Two Tiers of Skills
+
+The result is two directories in gutils with different purposes:
+
+**`gutils/claude-code/skills/`** contains skills I wrote and own. These are symlinked from `~/.claude/skills/` so they're available in every project. Edits go here, commits go here, this is the source of truth.
+
+- changelog, roadmap, release-comms, draft-docs (the new ones from the PR)
+- sam-style, work-log, blog-draft, screenshot, and others (pre-existing)
+- shared scripts used across skills
+
+**`gutils/TRUNK/skills/`** contains read-only copies of team-built skills from work repos (trunk2 and docs). These are NOT symlinked. They're snapshots so I have access if I need to reference them offline or if repo access changes. An `UPDATE-INSTRUCTIONS.md` file documents the source map and copy commands for refreshing them.
+
+```bash title="refreshing team skills"
+DEST=~/Developer/gutils/trunk/skills
+cp -r ~/TRUNK/trunk2/.claude/skills/on-call-triage "$DEST/"
+cp -r ~/TRUNK/trunk2/.claude/skills/pr-fix "$DEST/"
+# ... etc
+```
+
+## What's Actually in These Skills
+
+The release-comms suite is the interesting part. It's four skills that share data gathering but produce different outputs:
+
+- `/changelog` generates customer-facing changelog entries as Linear tickets
+- `/roadmap` compares engineering work against the public roadmap
+- `/draft-docs` creates gap-analysis notes files for the docs team
+- `/release-comms` orchestrates all three in a single pass
+
+They lean heavily on MCP integrations (Linear, Slack, Slite, Trunk Docs) and a set of shared bash scripts that find deploy tags and extract PR metadata. One command after a deploy, three deliverables.
+
+## First Real Run (and the First Bug)
+
+I ran `/release-comms` against v145, the same day I extracted the skills. It broke immediately. The `get-deploy-tags.sh` script assumed deploy tags existed as local git tags, but trunk2 creates releases via GitHub CI. The tags exist on the remote as GitHub Releases but aren't fetched into the local clone by default.
+
+The fix was a fallback chain: try local `git tag` first, fall back to `gh release list`. Then a second issue: even after fetching tags, the version sort was wrong. The team reset their version numbering at some point (v1372 dropped to v138), so sorting by version number put month-old releases on top. Switched to sorting by commit date instead.
+
+```bash title="the sort that matters"
+# version sort breaks on non-monotonic numbering
+git tag -l 'v*' --sort=-version:refname  # wrong: v1372 > v145
+
+# commit date sort just works
+git tag -l 'v*' --sort=-creatordate      # right: v145 is newest
+```
+
+After the fix, the full pipeline ran clean: 18 PRs classified, 5 changelog tickets created in Linear, roadmap assessed (no newly completed items), 2 docs notes files generated. About 3 minutes wall time from invocation to summary.
+
+## Designing Skills That Actually Get Used
+
+A few patterns that emerged from building these:
+
+**Skills are workflow documentation, not code.** A SKILL.md is a set of instructions for Claude Code, written in markdown. There's no runtime, no framework. The "execution engine" is the LLM reading the file and following the steps. This means you can iterate on a skill by editing prose, not debugging code.
+
+**Shared data gathering pays off fast.** The release-comms orchestrator runs changelog, roadmap, and docs prep in sequence, but the expensive work (fetching PRs, querying Linear, searching Slack) happens once in phase 1 and gets reused across all three. Without that shared phase, each skill would independently hit the same APIs.
+
+**Shell scripts handle the parts LLMs are bad at.** Date math, git log parsing, sorting. The shared scripts in `~/.claude/skills/shared/scripts/` do the mechanical data extraction, and the SKILL.md tells Claude what to do with the results. Good division of labor.
+
+**The two-tier model (own vs mirror) maps to how I actually work.** Skills I wrote go in gutils, symlinked globally, version-controlled. Team skills I didn't write go in gutils too, but as read-only snapshots with a refresh script. I don't need to stay in sync with every team commit. I just need a copy that works when I need it.
+
+**Instruction files beat automation for low-frequency tasks.** The `UPDATE-INSTRUCTIONS.md` for refreshing team skills could be a cron job. But "tell Claude to update trunk skills" works just as well and I only need it every couple weeks. Automation has a maintenance cost. A well-written instruction file has almost none.
+
+## What's Left
+
+The team skill copies are point-in-time snapshots. I could automate the refresh (a cron that pulls and copies), but honestly just telling Claude "update trunk skills" and letting it read the instruction file is fine for now.
+
+The `on-call-triage` skill had a newer version in one checkout than the other (someone added AWS CloudWatch log querying). That kind of drift is exactly why having a dated snapshot matters. At least I know what version I've got.
+
+The release-comms skills are trunk2-specific (they reference Linear labels, Slack channels, deploy tag formats). If I wanted to generalize them for another project, I'd need to parameterize those assumptions. Not worth it yet, but the structure would support it.

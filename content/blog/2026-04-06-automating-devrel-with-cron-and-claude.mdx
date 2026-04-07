@@ -1,0 +1,49 @@
+---
+title: "Automating DevRel with Cron and Claude Code"
+publishedAt: "2026-04-06"
+summary: "Building a hands-off pipeline that scans merged PRs, writes docs drafts, creates changelog tickets, and Slack DMs me every morning."
+tags: ["claude-code", "automation", "devrel", "cron", "mcp"]
+draft: true
+---
+
+I got tired of manually checking what shipped in trunk2 every day. We have a private monorepo with a dozen engineers merging PRs, and my job is to figure out which of those changes need docs, changelogs, or roadmap updates. The information is all there in the PR titles, diffs, and Linear tickets. I just needed something to connect the dots while I sleep.
+
+## What I built
+
+Two cron jobs that run Claude Code CLI in non-interactive mode (`claude -p`). Each one reads a self-contained prompt from a markdown file and does real work: pushes git branches, opens draft PRs, creates Linear tickets, and posts results to a Slack channel.
+
+**Daily scanner** runs at 4 AM. It queries the last 24 hours of merged trunk2 PRs via `gh` CLI, classifies them as user-facing or internal, deduplicates against existing docs PRs and Linear tickets, then creates whatever's needed. If nothing's user-facing, it sends a heartbeat so I know it ran.
+
+**Deploy watcher** runs every 2 hours. It checks for new deploy tags on trunk2 and runs the full release-comms pipeline when one appears. Same outputs: docs PRs, changelog tickets, roadmap updates. If no new deploy, it sends a one-liner heartbeat.
+
+Both post to a Slack channel using a hardcoded channel ID (survives channel renames).
+
+## The interesting parts
+
+The prompts are the whole thing. There's no orchestration code, no wrapper scripts, no dependencies beyond Claude Code and `gh`. Each prompt is a ~300-line markdown file that tells the agent exactly what to do, step by step, with all the constants (Linear team IDs, branch naming conventions, writing style rules) baked in.
+
+```bash title="crontab"
+57 3 * * * cd ~/TRUNK/docs && claude -p "$(cat /path/to/daily-scanner.md)" \
+  --model sonnet --max-budget-usd 5.00 \
+  --no-session-persistence --dangerously-skip-permissions \
+  >> ~/.claude/logs/daily-scanner.log 2>&1
+```
+
+The `$(cat ...)` is the trick. Cron evaluates it at runtime, reads the prompt from disk, and passes it to Claude. Edit the markdown file, the next run picks it up. No redeploy, no restart.
+
+MCP connections (Linear, Slack, Slite, GitBook) give the agent access to everything it needs to make good decisions about what to document and how. The dedup step checks both GitHub (open PRs) and Linear (existing tickets) before creating anything, so it doesn't spam duplicate work.
+
+<!-- TODO: add a section about the RemoteTrigger detour -- tried running this in Anthropic's cloud first, MCP connections didn't load, pivoted to local cron. Good lesson about validating the execution environment before building the full pipeline. -->
+
+## What the output looks like
+
+The first real test run scanned 13 trunk2 PRs, classified 5 as user-facing, and opened 2 docs draft PRs plus 5 changelog tickets. The Slack message looked like:
+
+<!-- TODO: paste actual Slack message screenshot or text from #sam-test once the first scheduled run completes -->
+
+## What's next
+
+- **Feature flag monitoring**: a third agent that watches for LaunchDarkly flag flips and unblocks held docs PRs (tracked in TRUNK-17922)
+- **Transition to a dedicated runner**: local Mac works but dies when the lid is closed. Plan is to move to a Raspberry Pi or cloud VM once the pipeline is proven stable for a week
+- Tuning the classification heuristic based on false positives/negatives from the first week of runs
+- The RemoteTrigger approach (Anthropic cloud) would eliminate the local machine dependency entirely, but MCP connections aren't working there yet. Worth revisiting.
