@@ -13,7 +13,7 @@ export const SIDE_PROJECTS: SideProject[] = [
     slug: 'sb-coffee-week',
     title: 'SB Coffee Week Map',
     description:
-      'Interactive map for Santa Barbara Coffee Week 2026 — find participating shops, track visits, plan your route.',
+      'Interactive map for Santa Barbara Coffee Week 2026. Find participating shops, track visits, plan your route.',
     emoji: '☕',
     color: '#6f4e37',
     liveUrl: 'https://sbcoffeeweekmap.com',
@@ -23,7 +23,7 @@ export const SIDE_PROJECTS: SideProject[] = [
     slug: 'sb-burger-week',
     title: 'SB Burger Week Map',
     description:
-      'Interactive map for Santa Barbara Burger Week — browse participating restaurants and their featured burgers.',
+      'Interactive map for Santa Barbara Burger Week. Browse participating restaurants and their featured burgers.',
     emoji: '🍔',
     color: '#d97706',
     liveUrl: 'https://sbburgerweekmap.com',
@@ -33,7 +33,7 @@ export const SIDE_PROJECTS: SideProject[] = [
     slug: 'gutentag-world',
     title: 'Gutentag, World!',
     description:
-      '100+ repos that each say "Gutentag, World!" in a different language — Python, Rust, COBOL, Befunge, a DNS TXT record, you name it.',
+      '100+ repos that each say "Gutentag, World!" in a different language. Python, Rust, COBOL, Befunge, a DNS TXT record, you name it.',
     emoji: '👋',
     color: '#10b981',
     liveUrl: 'https://github.com/GutentagWorld',
