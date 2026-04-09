@@ -49,7 +49,7 @@ const projects: Project[] = [
     slug: "blog-components",
     title: "Custom Blog Components",
     description:
-      "MDX component library — TerminalBlock, Callout, StepList, TIL, PartsList, GitHubCard.",
+      "MDX component library. TerminalBlock, Callout, StepList, TIL, PartsList, GitHubCard.",
     emoji: "🧩",
     color: "#d97706",
     blogSlug: "2026-03-23-mdx-components-for-the-blog",
@@ -150,7 +150,7 @@ export default async function DevIndexPage() {
       </div>
 
       {/* ─── Side Projects ─── */}
-      <div className="mt-16">
+      <div id="projects" className="mt-16">
         <h2 className="mb-1 text-xl font-bold tracking-tight">Projects</h2>
         <p className="mb-8 text-xs text-neutral-400">
           Side projects with their own homes on the web

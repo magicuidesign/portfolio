@@ -25,12 +25,15 @@ import {
  * A horizontal rule with a label on the left — the editorial section divider.
  * "Work ───────" gives clear visual hierarchy without a heading tag.
  */
-function SectionLabel({ children }: { children: string }) {
+function SectionLabel({ children, href }: { children: string; href?: string }) {
+  const label = (
+    <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors">
+      {children}
+    </span>
+  );
   return (
     <div className="flex items-center gap-3 mb-8">
-      <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-        {children}
-      </span>
+      {href ? <Link href={href}>{label}</Link> : label}
       <div className="flex-1 border-t border-border" />
     </div>
   );
@@ -200,7 +203,7 @@ export default async function Home() {
       {/* ─── Projects ─── */}
       <AnimatedSection delay={0.225}>
         <section>
-          <SectionLabel>Projects</SectionLabel>
+          <SectionLabel href="/dev#projects">Projects</SectionLabel>
 
           <div className="space-y-5">
             {SIDE_PROJECTS.map((project) => (
@@ -235,7 +238,7 @@ export default async function Home() {
       {/* ─── Latest Writing ─── */}
       <AnimatedSection delay={0.3}>
         <section>
-          <SectionLabel>Latest Writing</SectionLabel>
+          <SectionLabel href="/blog">Latest Writing</SectionLabel>
 
           <div className="space-y-6">
             {recentPosts.map((post) => (
