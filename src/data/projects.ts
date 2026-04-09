@@ -5,7 +5,7 @@ export interface SideProject {
   emoji: string
   color: string
   liveUrl: string
-  repoUrl: string
+  repoUrl?: string
 }
 
 export const SIDE_PROJECTS: SideProject[] = [
@@ -37,6 +37,5 @@ export const SIDE_PROJECTS: SideProject[] = [
     emoji: '👋',
     color: '#10b981',
     liveUrl: 'https://github.com/GutentagWorld',
-    repoUrl: 'https://github.com/samgutentag/GUTENTAGWORLD',
   },
 ]

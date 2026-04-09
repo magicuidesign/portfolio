@@ -14,7 +14,6 @@ describe('SIDE_PROJECTS', () => {
       expect(project.emoji).toBeTruthy()
       expect(project.color).toBeTruthy()
       expect(project.liveUrl).toBeTruthy()
-      expect(project.repoUrl).toBeTruthy()
     }
   })
 
@@ -26,7 +25,9 @@ describe('SIDE_PROJECTS', () => {
   it('all URLs start with https://', () => {
     for (const project of SIDE_PROJECTS) {
       expect(project.liveUrl).toMatch(/^https:\/\//)
-      expect(project.repoUrl).toMatch(/^https:\/\//)
+      if (project.repoUrl) {
+        expect(project.repoUrl).toMatch(/^https:\/\//)
+      }
     }
   })
 })
