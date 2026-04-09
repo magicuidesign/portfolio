@@ -1,0 +1,96 @@
+---
+title: "Revisiting a 7-Year-Old NLP Project (and What I'd Do Differently)"
+publishedAt: "2026-04-08"
+summary: "Rebuilding my Yelp review subtopic extraction pipeline with BERTopic, zero-shot classification, and an LLM insight layer."
+tags: ["python", "nlp", "bertopic", "machine-learning", "product-management", "portfolio"]
+draft: true
+---
+
+A few years ago I built a project that tried to answer a deceptively simple question: when someone writes a restaurant review, what specifically are they talking about?
+
+A star rating tells you *how much* someone liked a place. It doesn't tell you *why*. A 3-star review could mean "great food, terrible service" or "mediocre everything." If you could decompose reviews into subtopics (food quality, wait time, cleanliness, atmosphere, and so on), you'd have something a restaurant owner could actually act on. Not "you're 3.5 stars" but "your food scores 4.2 but your wait time scores 1.8."
+
+This is the same problem that companies like [Unwrap.ai](https://unwrap.ai) solve commercially: extracting structured signal from unstructured customer feedback at scale. I've been thinking about it since before I knew it was a product category.
+
+## Deciding What to Build
+
+The original project trained an LDA model on 496,000 Arizona restaurant reviews and extracted 9 subtopics: retention, food quality, wait time, atmosphere, ordering, cleanliness, menu options, customer service, and value. Reviews were tagged via token-overlap counting, and I built a comparison tool that benchmarked any restaurant against its chain, zip code, and cuisine peers.
+
+Coming back to it, I wrote a PRD before touching any code. Not because a side project needs one, but because I wanted to think through what was actually worth rebuilding vs what was just technically interesting. Three questions shaped the scope:
+
+**What's the user problem the original didn't solve?** The original had no way to measure whether the subtopics were correct. I eyeballed topic word lists and made judgment calls. That's fine for exploration. It's not something you'd put in front of a customer.
+
+**What's changed in the tooling that matters?** LDA doesn't understand meaning. It finds topics through word co-occurrence, so "terrible wait" and "waited forever" could land in different topics. The token-overlap tagger made this worse by missing reviews that used different words for the same concept. Embedding-based approaches handle this natively now.
+
+**What should I explicitly not build?** No production deployment. No real-time inference. No custom model fine-tuning. The goal is a portfolio artifact that demonstrates product thinking around feedback intelligence, not a shipped product.
+
+## How to Build It (and the Tradeoffs)
+
+Four changes, each a product decision with an alternative I rejected.
+
+**LDA to BERTopic.** BERTopic uses sentence embeddings to cluster reviews by semantic meaning. "Terrible wait" and "waited forever" end up in the same cluster because the embedding model understands they mean the same thing. The first pass found 598 micro-topics (too granular). After tuning `min_cluster_size` and adding stopword removal to the topic representations, I merged those down to 29 topics. Cleanliness, customer service, and ordering emerged as distinct clusters without any guidance from me.
+
+*Alternative rejected: fine-tuned classifier.* Would require a large labeled training set upfront. The two-layer approach (BERTopic for discovery, zero-shot for assignment) handles the cold-start problem better. When you're building a feedback intelligence product, you often don't have labels when you start. Unsupervised discovery first, supervised refinement second.
+
+**Token overlap to zero-shot classification.** Each review gets scored against all 9 subtopic labels using `facebook/bart-large-mnli`. The critical design choice: `multi_label=True`, so a review can score high on multiple subtopics simultaneously. On a 5K validation sample, reviews averaged 4.8 subtopics above the 0.5 threshold. The original token-overlap tagger assigned 2-3 at most. The signal was always there. The old approach just couldn't see it.
+
+*Alternative rejected: LLM for all classification.* Sending every review through Claude or GPT for subtopic classification would work but at roughly $50-100 for 50K reviews. More importantly, it wouldn't demonstrate the embedding + clustering pipeline that underpins most production feedback systems. The LLM is more valuable as an insight layer on top of structured clusters than as a brute-force classifier.
+
+**Adding an LLM insight layer.** Claude generates a human-readable label and one-sentence summary per BERTopic cluster. Of the 29 clusters, 16 mapped to cuisine-specific topics, 5 to food quality, 3 to customer service. Retention, atmosphere, value, and menu options didn't emerge as standalone clusters at all. They live *inside* reviews about other things. BERTopic tells you what reviews are *about* at a macro level. Zero-shot tells you what reviews *discuss*. You need both.
+
+**Adding a formal evaluation layer.** This is the piece the original project was missing, and honestly, it's the most important one from a product perspective. I labeled 200 reviews as a gold set and ran them against the zero-shot classifier.
+
+## Measuring Success
+
+The evaluation results are honest.
+
+| Subtopic | Precision | Recall | F1 |
+|----------|-----------|--------|------|
+| food_quality | 0.85 | 0.87 | **0.86** |
+| cleanliness | 0.75 | 0.77 | **0.76** |
+| ordering | 0.59 | 0.87 | 0.70 |
+| customer_service | 0.67 | 0.70 | 0.68 |
+| wait_time | 0.55 | 0.86 | 0.67 |
+| menu_options | 0.48 | 0.75 | 0.59 |
+| atmosphere | 0.44 | 0.80 | 0.57 |
+| retention | 0.29 | 0.92 | 0.44 |
+| value | 0.29 | 0.90 | 0.44 |
+
+Macro F1 of 0.635 at a 0.5 threshold. Optimal threshold is 0.80, which pushes F1 to 0.70.
+
+The pattern tells a product story. Recall is high across the board (the classifier rarely misses a relevant subtopic). Precision is the problem, especially for retention and value. The classifier over-triggers on those because any positive review implicitly signals "I'd come back" and "it was worth the price" even when the reviewer never explicitly says so.
+
+If I were building this as a product, the next step would be per-subtopic threshold tuning. A global threshold is a blunt instrument when retention needs a 0.90 cutoff and cleanliness works fine at 0.50.
+
+## The Comparison Tool Still Works
+
+The original project's strongest product thinking was the comparison benchmarking tool. Pick any restaurant and see how it stacks up against its chain, its zip code, and its cuisine peers on every subtopic. That tool ports directly to the new pipeline. Instead of token-overlap tags, it uses zero-shot scores to derive per-restaurant subtopic ratings. Same product output, better input signal.
+
+This is the layer that turns NLP output into something a business user would actually care about. The clustering and classification are infrastructure. The comparison report is the product.
+
+## The Dataset Versioning Lesson
+
+Something I didn't expect: the Yelp Open Dataset isn't a static archive. Each release covers different geographic regions. My original project used a release heavy on Arizona: 7,066 restaurants, 496K reviews. The current release has 40% more reviews overall but 75% fewer AZ restaurants (1,381 restaurants, 121K reviews).
+
+This doesn't break anything. But it's a real lesson about reproducibility in ML products. If you don't pin your dataset, you can't reproduce your results. Not because the code changed, but because the world did. Any production system processing customer feedback needs to account for distribution drift, not just model drift.
+
+## What I Still Wouldn't Ship
+
+The evaluation results make this clear. A macro F1 of 0.70 is fine for analysis. It's not fine for a product that surfaces subtopic ratings to paying customers.
+
+What would need to be true to ship this for real:
+
+- **Per-subtopic threshold tuning.** 0.80 globally is a blunt instrument when each subtopic has different precision/recall characteristics.
+- **A much larger gold set.** 200 reviews labeled by one person isn't a product-grade evaluation. You'd want 1,000+ reviews, multiple annotators, and inter-annotator agreement scores.
+- **Drift detection.** Subtopic distributions change over time. A model validated on 2022 reviews will degrade on 2025 reviews as language shifts. You need monitoring.
+- **The LLM layer needs guardrails.** Caching, cost controls, fallback behavior when the API is slow or down. A cluster label that changes between runs erodes trust.
+
+Knowing what's missing is as important as knowing what works. The gap between "this is interesting" and "this is shippable" is where most product decisions live.
+
+## Wrap Up
+
+The core problem hasn't changed since I first built this: people write reviews that contain multidimensional feedback, and star ratings collapse all of it into a single number. The tooling has gotten dramatically better. Embeddings handle synonyms that LDA couldn't. Zero-shot classification catches signal that keyword matching missed. LLMs generate labels that humans used to do manually.
+
+But the hard part was never the NLP. It's deciding what to measure, how to evaluate it, and when to say "not yet."
+
+<!-- TODO: add links to repo and any visuals once full run completes -->

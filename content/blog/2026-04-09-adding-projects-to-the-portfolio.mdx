@@ -1,0 +1,106 @@
+---
+title: "🗺️ Adding Projects to the Portfolio"
+publishedAt: "2026-04-09"
+summary: "Gave my side projects — SB Coffee Week and SB Burger Week maps — a proper home on the portfolio site."
+tags: ["typescript", "nextjs", "portfolio", "side-projects"]
+draft: true
+---
+
+My portfolio site has grown beyond a simple blog. I've been building side projects (maps, tools, one-off experiments) and I wanted a clean way to reference them in multiple places — the homepage, a dedicated `/dev` page, maybe sidebar links down the road.
+
+The temptation is to hardcode project data wherever you need it. That works until you need to update a project URL in three different places, and you inevitably miss one.
+
+So I created `src/data/projects.ts` as a single source of truth.
+
+## The structure
+
+Nothing fancy. A TypeScript interface that captures what I care about:
+
+```typescript
+export interface SideProject {
+  slug: string
+  title: string
+  description: string
+  emoji: string
+  color: string
+  liveUrl: string
+  repoUrl: string
+}
+```
+
+The `slug` is the canonical identifier. `emoji` and `color` are there because I like visual variety in card grids. `description` is what shows up on cards. Live URL and repo link are non-negotiable.
+
+Then a constant array of projects:
+
+```typescript
+export const SIDE_PROJECTS: SideProject[] = [
+  {
+    slug: 'sb-coffee-week',
+    title: 'SB Coffee Week Map',
+    description: 'Interactive map for Santa Barbara Coffee Week 2026 — find participating shops, track visits, plan your route.',
+    emoji: '☕',
+    color: '#6f4e37',
+    liveUrl: 'https://sbcoffeeweekmap.com',
+    repoUrl: 'https://github.com/samgutentag/sbcoffeeweek',
+  },
+  {
+    slug: 'sb-burger-week',
+    title: 'SB Burger Week Map',
+    description: 'Interactive map for Santa Barbara Burger Week — browse participating restaurants and their featured burgers.',
+    emoji: '🍔',
+    color: '#d97706',
+    liveUrl: 'https://sbburgerweekmap.com',
+    repoUrl: 'https://github.com/samgutentag/sbburgerweek',
+  },
+]
+```
+
+Both projects are interactive maps. The structure is generic enough to handle future projects without changing the interface.
+
+## Wired up on /dev
+
+With the data file in place, I added a Projects section to the `/dev` page below the existing Dev Tools grid. The cards are visually similar to the dev tool cards but meaningfully different in behavior: clicking opens the live site externally, and each card shows two links — "Visit site" and "View source" — instead of "Open tool" and "Read the blog post."
+
+The key difference in implementation is using `<a target="_blank">` instead of Next.js `<Link>`. Dev tools are internal routes; these projects live on separate domains. Swapping the chevron icon for a diagonal arrow makes the "this goes somewhere else" intent obvious without needing a label.
+
+The cards pull color from the project data for the preview area background (at 12% opacity) and the emoji container (at 20% opacity). Keeps the grid visually varied without hand-crafting each card.
+
+## On the homepage too
+
+The `/dev` page is a place engineers go looking for things. The homepage is different — it's the first impression, closer to a resume than a tool directory. But projects belong there too.
+
+I added a Projects section between the Work timeline and Latest Writing sections on the homepage. Same `AnimatedSection` + `SectionLabel` pattern as everything else on the page, with the stagger delay slotted at 0.225 — between Work at 0.15 and Latest Writing at 0.3.
+
+The layout mirrors the Work timeline: icon on the left, title and description on the right. Instead of company logos, each project gets its emoji in a tinted container (20% opacity of the brand color). The whole row is a link that opens the live site in a new tab.
+
+```tsx
+<a
+  href={project.liveUrl}
+  target="_blank"
+  rel="noopener noreferrer"
+  className="group flex items-center gap-4"
+>
+  <div
+    className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-xl text-2xl shadow-sm"
+    style={{ background: `${project.color}20` }}
+  >
+    {project.emoji}
+  </div>
+  <div>
+    <p className="text-base font-medium text-foreground group-hover:text-accent transition-colors">
+      {project.title}
+    </p>
+    <p className="text-sm text-muted-foreground mt-0.5">
+      {project.description}
+    </p>
+  </div>
+</a>
+```
+
+The `${project.color}20` trick is a hex color with 20% opacity appended as a two-digit hex value. It's a quick way to tint a container without reaching for Tailwind's opacity modifier syntax, and it ties each card's background directly to the project's brand color without hardcoding anything.
+
+## What's left
+
+This covers the three main surfaces: data file, /dev page, homepage. The obvious next step would be a dedicated `/projects` page with more detail — longer descriptions, screenshots, tech stack tags. Not urgent, but the data structure is ready for it.
+
+<!-- TODO: Consider a /projects page with richer detail per project -->

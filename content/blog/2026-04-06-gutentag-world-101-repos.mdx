@@ -1,0 +1,90 @@
+---
+title: "Gutentag, World! — 101 Hello Worlds in One GitHub Org"
+publishedAt: "2026-04-06"
+summary: "I filled a GitHub org with 101 tiny repos that each say 'Gutentag, World!' in a different language, protocol, or format."
+tags: ["github", "side-project", "polyglot", "automation", "python", "jinja2"]
+draft: true
+---
+
+I wanted a GitHub org that was just... fun. No product, no roadmap, no stakeholders. Just the dumbest possible thing executed with unreasonable thoroughness.
+
+[GutentagWorld](https://github.com/GutentagWorld) is a GitHub org with 101 repositories. Every single one does the same thing: output `Gutentag, World!`. Python, Rust, COBOL, Befunge, a DNS TXT record, a Kubernetes Job, a cowsay script, a QR code generator — if it can say hello, it says Gutentag.
+
+## The Generator
+
+Doing this by hand would be miserable. So instead of 101 repos, I built one repo that generates 101 repos.
+
+The [generator](https://github.com/samgutentag/GUTENTAGWORLD) is a Python project with three pieces:
+
+1. **A manifest** — a single Python file defining all 101 repos as dataclass entries. Name, display name, category, template name, run command, whether it's publishable to a package registry.
+
+2. **Jinja2 templates** — shared templates for README, LICENSE, CI workflow, and test script, plus per-language source templates. Some are single files (the Bash template is three lines), some are full directory structures (the Rust template has `Cargo.toml`, `src/lib.rs`, `src/main.rs`).
+
+3. **A deploy script** — loops through the generated `output/` directory, creates each repo on GitHub via `gh`, and pushes.
+
+Adding repo #102 means adding one manifest entry and one template file, then re-running the generator.
+
+```python title="generator/manifest.py"
+@dataclass
+class Repo:
+  name: str           # 'python' → gutentag-world-python
+  display: str        # 'Python'
+  category: str       # 'Classic Programming Languages'
+  template: str       # matches template filename
+  run_cmd: str        # 'python main.py'
+  publishable: bool = False
+  registry: str = ''
+  install_cmd: str = ''
+```
+
+## Every Repo Gets a Test
+
+Each repo includes a `test.sh` that verifies the greeting is present. For executable repos, it runs the code and greps stdout. For data files like JSON or YAML, it greps the file directly. The CI workflow calls `bash test.sh` as its verification step.
+
+```bash title="test.sh (for gutentag-world-yaml)"
+#!/usr/bin/env bash
+set -euo pipefail
+echo "Testing gutentag-world-yaml..."
+grep -q "Gutentag, World!" gutentag.yaml
+echo "PASS"
+```
+
+## The Categories
+
+The 101 repos span 10 categories:
+
+- **35 classic programming languages** — Python through Objective-C, including COBOL and x86 assembly
+- **5 shell/scripting** — Bash, Zsh, Fish, AWK, sed, Makefile
+- **8 web/frontend** — HTML, CSS-only (`content:` property), React, Svelte, Vue, htmx, WebAssembly, Web Components
+- **12 protocols** — raw TCP, UDP, HTTP, WebSocket, gRPC, GraphQL, MQTT, SMTP, curl, SSH banner, DNS TXT record, FTP
+- **8 infrastructure** — Docker, Terraform, GitHub Action, Kubernetes Job, Ansible playbook, Cloudflare Worker, AWS Lambda, cron
+- **9 data formats** — JSON, YAML, TOML, XML, CSV, protobuf, Markdown, LaTeX, SQL
+- **5 AI/LLM** — MCP server, OpenAI API, Claude API, LangChain, Ollama
+- **12 esoteric/fun** — Whitespace, LOLCODE, Befunge, Rockstar, Shakespeare, Emojicode, cowsay, FIGlet, QR code, Morse code, binary, Braille
+- **4 hardware** — Arduino, Raspberry Pi, MicroPython, WLED
+- **3 database** — SQLite, Redis, PostgreSQL
+
+## Publishable Packages
+
+16 of the repos are structured as real packages. The plan is to publish `gutentag-world` (or the idiomatic equivalent) to PyPI, npm, crates.io, RubyGems, pub.dev, Hex.pm, NuGet, Maven Central, and more. Each package exports a function that returns the string and a CLI command that prints it.
+
+```python
+from gutentag_world import gutentag_world
+gutentag_world()  # → "Gutentag, World!"
+```
+
+<!-- TODO: update once packages are actually published to registries -->
+
+## The Org Profile
+
+The org's [profile page](https://github.com/GutentagWorld) is auto-generated from a `.github` repo. A Python script scans the org, cross-references the manifest, and builds a markdown table with CI badges, registry links, and status for all 101 repos. A GitHub Action regenerates it weekly.
+
+## What's Next
+
+- **Publish to package registries** — 16 repos are structured as real packages (PyPI, npm, crates.io, RubyGems, etc.) with the right metadata already in place. Need to set up API tokens and tag-triggered publish workflows. The goal: `pip install gutentag-world` actually works.
+- Get remaining CI green — the simple repos (data files, shell scripts) all pass. Some of the more exotic runners (COBOL, Shakespeare, Emojicode) will need creative solutions or just get marked as "runs locally."
+- Maybe add more repos — there's always another way to say hello
+
+<!-- TODO: update with registry publishing details once that's done -->
+
+The whole thing took about two hours from idea to 101 repos live on GitHub. The generator approach means it's trivially extensible. If you can think of a way to say "Gutentag, World!" that isn't on the list, [open an issue](https://github.com/GutentagWorld).

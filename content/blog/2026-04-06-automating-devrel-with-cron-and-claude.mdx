@@ -23,13 +23,25 @@ Both post to a Slack channel using a hardcoded channel ID (survives channel rena
 The prompts are the whole thing. There's no orchestration code, no wrapper scripts, no dependencies beyond Claude Code and `gh`. Each prompt is a ~300-line markdown file that tells the agent exactly what to do, step by step, with all the constants (Linear team IDs, branch naming conventions, writing style rules) baked in.
 
 ```bash title="crontab"
-57 3 * * * cd ~/TRUNK/docs && claude -p "$(cat /path/to/daily-scanner.md)" \
+57 3 * * * . ~/.claude/.env && cd ~/TRUNK/docs && claude -p "$(cat /path/to/daily-scanner.md)" \
   --model sonnet --max-budget-usd 5.00 \
   --no-session-persistence --dangerously-skip-permissions \
   >> ~/.claude/logs/daily-scanner.log 2>&1
 ```
 
 The `$(cat ...)` is the trick. Cron evaluates it at runtime, reads the prompt from disk, and passes it to Claude. Edit the markdown file, the next run picks it up. No redeploy, no restart.
+
+## The auth gotcha
+
+The first time I ran this from cron, every run failed with "Not logged in / Please run /login". Worked fine from my terminal. The issue: `claude` in an interactive shell authenticates via OAuth (the `/login` flow), and that state lives somewhere cron's minimal environment can't reach. Cron doesn't source `.zshrc` or `.zprofile`, so none of that context is available.
+
+The fix is an API key in a dotfile that cron sources before running anything:
+
+```bash title="~/.claude/.env"
+export ANTHROPIC_API_KEY=sk-ant-your-key-here
+```
+
+Each crontab line starts with `. ~/.claude/.env &&` to load the key into the environment. One subtlety: if you're testing the cron line by pasting it into zsh, use `source` instead of `.` for the sourcing command. Zsh can get confused by `. /path/to/.env` and try to execute the file instead of sourcing it.
 
 MCP connections (Linear, Slack, Slite, GitBook) give the agent access to everything it needs to make good decisions about what to document and how. The dedup step checks both GitHub (open PRs) and Linear (existing tickets) before creating anything, so it doesn't spam duplicate work.
 

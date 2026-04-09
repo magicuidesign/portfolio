@@ -1,64 +1,79 @@
 ---
-title: "Building a CI Health Audit Tool with Public GitHub Data"
-publishedAt: "2026-04-06"
-summary: "A scoring engine, CLI, and web app that generate personalized CI health reports for any GitHub org — built as a sales tool for Trunk."
+title: "Rebuilding a CI Audit Tool Around Raw Numbers Instead of Scores"
+publishedAt: "2026-04-08"
+summary: "Scrapped a composite scoring model in favor of 10 raw metrics with product CTAs — turns out prospects trust their own numbers more than our grades."
 tags: ["python", "react", "fastapi", "github-api", "devrel", "trunk"]
 draft: true
 ---
 
-Most engineering teams have no idea how their CI compares to anyone else's. They know it's slow, they know tests flake, but they've never seen a number attached to it. That's the gap this tool fills — a cold outreach asset that tells a prospect "your CI pass rate is 74%, the median is 91%" before they've ever heard of Trunk.
+The first version of this tool scored GitHub orgs on a 0-100 scale across five dimensions, split into four persona views, and produced reports that said things like "your CI health score is 52." It worked. Nobody cared about the score.
 
-The idea came out of a GTM sync: what if we could generate a personalized CI health report for any company using nothing but their public GitHub data? No install, no credentials, no sales call required. Just a score and some findings that are hard to ignore.
+The problem was legibility. A composite score requires the reader to trust your weighting model, and cold prospects don't trust you yet. They'd look at "52/100" and ask "compared to what?" — which meant we needed benchmarks, which meant we needed data we didn't have, which meant we were making stuff up. Alex's PRD cut through all of that: show the raw numbers, let the numbers speak, attach each number to a Trunk product that fixes it.
 
-## What it does
+## The rewrite
 
-`trunk-audit vercel` hits the GitHub API, pulls PRs, CI workflow runs, branch protection rules, and contributor data for an org's top public repos. It scores them across five dimensions — CI pass rate, PR cycle time, merge frequency, branch protection, and contributor activity — weighted into a 0–100 composite score benchmarked against (hardcoded, for now) Trunk customer data.
+The new version is a single-repo audit. No org aggregation, no persona switching, no composite scores. You authenticate via a GitHub App (read-only, no code access), type an `owner/repo`, and get back 10 metrics in two groups.
 
-The output is a report tailored to one of four personas: Engineering Manager, VP of Engineering, DevOps/Platform Engineer, or CTO. Same data, different framing. The EM sees blocked developer hours. The CTO sees estimated cost of CI failures and strategic risk.
+Five headline metrics, each with a big number, a one-line explanation, expandable methodology, and a product CTA:
 
-## The stack
+1. **CI Failure Rate** — % of workflow runs on the default branch that failed
+2. **Re-run Rate** — % of runs with `run_attempt > 1` (the behavioral fingerprint of flaky tests)
+3. **P90 Time to Merge** — 90th percentile PR creation-to-merge, with P50 for comparison
+4. **CI Duration Trend** — weekly median run duration over 90 days, rendered as a sparkline
+5. **PRs per Committer per Day** — velocity proxy that frames the "AI is making more PRs" problem
 
-Three packages in a monorepo:
+Five deeper insight cards in a compact grid: total CI minutes consumed, active workflow count, noisiest workflows by failure rate, queue saturation (P90 wait time), and trigger breakdown (push vs PR vs schedule).
 
-- **`packages/scorer`** — Python. Async GitHub API client with httpx, metric calculators, scoring model, persona report builder. This is the shared core that both the CLI and web app consume.
-- **`packages/cli`** — Python CLI via Typer. Outputs to terminal (Rich tables), JSON, or self-contained HTML. Four persona-specific Jinja2 templates with distinct designs — the DevOps one has a terminal aesthetic with monospace fonts and dark theme, the CTO version uses amber accents and risk-level badges.
-- **`packages/web`** — FastAPI backend serving the scorer as REST, React + Tailwind frontend. Sidebar with org tabs, persona switcher, score visualization.
+## Architecture decisions that mattered
 
-```bash title="Running an audit"
-trunk-audit stripe --persona vp --output html -f report.html
+**Bot filtering everywhere.** Dependabot and Renovate generate a ton of CI activity that doesn't reflect human engineering velocity. Every metric filters bots out by default and reports what was excluded. This alone changed the numbers dramatically for repos with active dependency bots.
+
+**Adaptive lookback.** A repo with 50 runs/month gets the full 30-day window. A repo with 3,000 runs/month gets shrunk to ~10 days so we stay under the API budget. The first page of results estimates the density, and we adjust before paginating further. This is disclosed in the report header.
+
+**API budget tracking.** Each audit gets 500 API calls. The fetcher checks the budget before every request and stops gracefully instead of hitting rate limits. Trend data uses a sampling strategy — one page per week over 90 days (13 calls) instead of paginating the full history.
+
+```python title="Adaptive lookback estimation"
+def estimate_lookback_days(first_page_count, first_page_days_covered,
+                           target_sample=1000, max_lookback=30, min_lookback=7):
+    runs_per_day = first_page_count / first_page_days_covered
+    estimated_total = runs_per_day * max_lookback
+    if estimated_total <= target_sample * 3:
+        return max_lookback
+    ideal_days = max_lookback * target_sample / estimated_total
+    return max(min_lookback, math.floor(ideal_days))
 ```
 
-## Scoring model
+**Conditional CTAs.** The first version showed "fix this with Flaky Tests" even when the rerun rate was 0%. Alex caught this immediately. Now CTAs only appear when the metric indicates an actual problem — failure rate above 2%, rerun rate above 2%, P90 merge time over an hour.
 
-Nothing fancy — linear normalization within each dimension's good-to-bad range, multiplied by weight. CI pass rate below 70% gets zero points. PR cycle time under 12 hours gets full marks. The weights are from the PRD:
+## The OAuth flow
 
-| Dimension | Weight | Full marks |
-|-----------|--------|-----------|
-| CI pass rate | 30% | >95% |
-| PR cycle time | 25% | <12hr |
-| Merge frequency | 20% | 5+/day |
-| Branch protection | 15% | Reviews + checks |
-| Contributor activity | 10% | >80% active |
+GitHub App OAuth instead of personal access tokens. The app requests `actions:read`, `checks:read`, `pull_requests:read`, and `metadata:read` — nothing else. The backend handles the code exchange and stores sessions in memory with an 8-hour expiry.
 
-The interesting wrinkle: branch protection data always comes back empty through the public API because GitHub restricts it to repo admins. So every org scores 0/15 on that dimension. The report discloses this and frames it as "install Trunk to see the full picture."
+One thing that bit us: the GitHub OAuth callback URL (`/auth/callback`) collided with the Vite dev proxy. GitHub redirects the browser to that URL, but the React SPA also needs to load there to read the `code` parameter. The fix was renaming the backend endpoint to `/auth/exchange` so the proxy doesn't intercept the browser redirect.
 
-## Caching
+## Deploying to Vercel (and everything that broke)
 
-Two layers. API responses are cached to disk with a 1-hour TTL — this is mainly about not burning through GitHub's rate limit during demos. Full scored reports are cached separately with no expiry, so you can flip between orgs and personas instantly. A "Rerun Analysis" button bypasses the report cache and re-fetches everything.
+Vercel serves static files directly from the frontend build and routes API calls to a Python serverless function. Sounds simple, but serverless has opinions about state:
 
-Without a token you get 60 requests/hour. With `GITHUB_TOKEN` set (no scopes needed, just authentication), you get 5,000. The tool works either way but the error messages are explicit about this when you hit the limit.
+- **Read-only filesystem.** The file-based cache can't write. Wrapped all cache writes in `try/except OSError` — cache becomes a no-op in serverless.
+- **No shared memory.** The in-memory session store and CSRF state tokens don't survive between function invocations. OAuth state validation had to be relaxed — the code exchange with GitHub is the real security check anyway.
+- **Password gate.** Server-side middleware can't gate static files (Vercel serves them before hitting the function). Moved the gate to the frontend — an API endpoint validates the password, React shows the form.
 
-## Flaky test detection
+The dev experience is still local FastAPI + Vite with hot reload. Vercel is for sharing the demo.
 
-<!-- TODO: expand this — the alternation heuristic is interesting enough to explain -->
+## The GitHub OAuth rabbit hole
 
-The scorer detects potential flaky tests by looking at workflow run history. If a workflow alternates between pass and fail at a rate above 30%, it gets flagged. Simple heuristic, but it caught 7 workflows in Vercel's public repos on the first run.
+Account switching in GitHub OAuth is not a thing. GitHub uses whatever account is logged into the browser. If you sign out of the app and sign back in, GitHub auto-approves because you're still logged in as the same user. The only way to switch is to literally log out of github.com.
+
+We ended up with a "Switch GitHub account" button that clears the app session, revokes the OAuth grant via GitHub's API, opens github.com/logout in a new tab, and returns the app to the landing page. Not elegant, but honest about the platform constraint.
+
+The repo listing endpoint was another surprise. `GET /user/installations/{id}/repositories` returns repos where *both* the app is installed *and* the user's OAuth token has access. So even if an org admin installs the app on all repos, users who aren't org members only see repos they have direct access to. The dropdown shows what it can; the text input works for anything the app can reach.
 
 ## What's next
 
-- Programmatic PDF export for email attachments (right now HTML prints-to-PDF fine, but SDRs want a one-click thing)
-- A mocked "upgrade" toggle in the web app showing what the report looks like with post-install Trunk data
-- Batch generation for the SDR pilot — 5 target accounts, reports ready to attach to outreach sequences
-- The scoring model needs real benchmark data instead of hardcoded values. That's a data pipeline problem for later.
+- Friday feedback session with Alex reviewing real dashboards
+- Persistent cache for Vercel (Vercel KV or Redis) so audits don't re-run on every visit
+- Render deployment as an alternative — `render.yaml` is already in the repo
+- Icon system refresh with a consistent SVG pack
 
-The whole thing went from PRD to working prototype in one session. The persona templates took a second pass. It's rough in places but it runs against real orgs and produces reports that are specific enough to be useful — which is the whole point.
+The scoring model version took a week to feel right. The raw numbers version took a day and Alex's reaction was "this is beautiful." Sometimes the right abstraction is no abstraction.
