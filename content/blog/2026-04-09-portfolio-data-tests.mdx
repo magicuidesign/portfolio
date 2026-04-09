@@ -1,0 +1,51 @@
+---
+title: "🧪 Catching Bad Data Before It Ships"
+publishedAt: "2026-04-09"
+summary: "Added Vitest data validation tests to catch configuration issues in the portfolio's projects dataset."
+tags: ["testing", "vitest", "nextjs", "data-validation"]
+draft: true
+---
+
+I've shipped broken data to production more times than I'd like to admit. Usually it's small things: a missing field, a typo in a URL, a slug that collides with another one. But small things compound. A missing URL breaks a link. A bad slug breaks routing. These aren't earth-shattering bugs, but they're friction that could have been caught with a test.
+
+My portfolio site has a few datasets that power different sections: blog metadata, resume/work history, side projects. Since these are hand-curated JSON-like structures, they're the perfect place to catch mistakes early.
+
+I set up Vitest (already configured from the blog pipeline tests) and wrote tests for the `SIDE_PROJECTS` array. The tests are straightforward:
+
+```typescript
+describe('SIDE_PROJECTS', () => {
+  it('is a non-empty array', () => {
+    expect(SIDE_PROJECTS.length).toBeGreaterThan(0)
+  })
+
+  it('every project has all required fields', () => {
+    for (const project of SIDE_PROJECTS) {
+      expect(project.slug).toBeTruthy()
+      expect(project.title).toBeTruthy()
+      expect(project.description).toBeTruthy()
+      expect(project.emoji).toBeTruthy()
+      expect(project.color).toBeTruthy()
+      expect(project.liveUrl).toBeTruthy()
+      expect(project.repoUrl).toBeTruthy()
+    }
+  })
+
+  it('has no duplicate slugs', () => {
+    const slugs = SIDE_PROJECTS.map((p) => p.slug)
+    expect(new Set(slugs).size).toBe(slugs.length)
+  })
+
+  it('all URLs start with https://', () => {
+    for (const project of SIDE_PROJECTS) {
+      expect(project.liveUrl).toMatch(/^https:\/\//)
+      expect(project.repoUrl).toMatch(/^https:\/\//)
+    }
+  })
+})
+```
+
+Each test catches a different category of problem. Missing fields are obvious. Duplicate slugs would break routing. Non-HTTPS URLs are a security/trust issue. Running these before deploy means I'll catch data mistakes the same way I'd catch code mistakes.
+
+Next up: the same thing for the resume data and any other structured datasets. The pattern is clear now, so it's just repetition.
+
+This won't prevent logic errors (e.g., linking to the wrong URL intentionally), but it catches the dumb mistakes. That's the whole point.
