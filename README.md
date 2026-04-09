@@ -9,7 +9,7 @@ MDX-powered blog with a custom component library for technical writing.
 - **Syntax highlighting** with dual-theme Shiki (`min-light` / `min-dark`) via rehype-pretty-code. Switches automatically with the site theme.
 - **Terminal windows** for shell code blocks, styled after Carbon with traffic light dots and a title bar. Use `title="..."` on the code fence to label them.
 - **MDX components** for structured content: `TerminalBlock`, `Callout`, `StepList`, `TIL`, `PartsList`, `GitHubCard`. These live in `src/components/mdx/`.
-- **Tag filtering** at `/blog/tag/[tag]`, year-grouped archive, and draft support via `unpublished: true` in frontmatter.
+- **Tag filtering** at `/blog/tag/[tag]`, year-grouped archive, and draft support via `draft: true` in frontmatter.
 - **GFM support** for tables, strikethrough, and task lists. Tables get a horizontal scroll wrapper on small screens.
 
 ## Dev Tools
@@ -21,9 +21,32 @@ Standalone interactive pages at `/dev/<project>` for one-off tools linked from b
 - `/dev/logo-review` — logo variant review tool
 - `/dev/blog-components` — MDX component playground
 
+## Projects
+
+Side projects with their own live sites, showcased on the `/dev` page and homepage.
+
+- [SB Coffee Week Map](https://sbcoffeeweekmap.com) — interactive map for Santa Barbara Coffee Week ([source](https://github.com/samgutentag/sbcoffeeweek))
+- [SB Burger Week Map](https://sbburgerweekmap.com) — interactive map for Santa Barbara Burger Week ([source](https://github.com/samgutentag/sbburgerweek))
+
 ## Theming
 
 Light and dark palettes defined as CSS custom properties with class-based switching via `next-themes`. Three-state toggle cycles through light, dark, and system.
+
+## Testing & CI
+
+Vitest unit tests cover the data layer — blog pipeline, projects, and resume data. GitHub Actions runs three parallel jobs on every push and PR:
+
+| Job | What it checks |
+|-----|---------------|
+| **Type Check** | `tsc --noEmit` |
+| **Tests** | `vitest run` (13 tests across 3 files) |
+| **Build** | `next build` |
+
+```bash
+npm test          # run tests once
+npm run test:watch  # watch mode
+npm run typecheck   # type check only
+```
 
 ## Tech Stack
 
@@ -34,6 +57,8 @@ Light and dark palettes defined as CSS custom properties with class-based switch
 | Styling      | Tailwind CSS 4, `@tailwindcss/typography`  |
 | Content      | MDX via next-mdx-remote, gray-matter       |
 | Highlighting | Shiki via rehype-pretty-code               |
+| Testing      | Vitest                                     |
+| CI           | GitHub Actions                             |
 | Animations   | Framer Motion                              |
 | Theming      | next-themes                                |
 | Icons        | lucide-react + custom SVGs                 |
@@ -42,8 +67,8 @@ Light and dark palettes defined as CSS custom properties with class-based switch
 ## Getting Started
 
 ```bash
-pnpm install
-pnpm dev
+npm install
+npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
@@ -51,8 +76,13 @@ Open [http://localhost:3000](http://localhost:3000).
 ## Project Structure
 
 ```
+.github/
+  workflows/ci.yml   # CI pipeline (typecheck, test, build)
 content/
   blog/              # MDX blog posts (frontmatter + markdown)
+docs/
+  future/            # Ideas for future enhancements
+  superpowers/       # Specs and implementation plans
 public/
   companyIcons/      # Work timeline logos
 src/
@@ -60,7 +90,7 @@ src/
   app/dev/           # Standalone interactive tool pages
   components/        # React components (Nav, ThemeToggle, etc.)
   components/mdx/    # MDX component library
-  data/              # Resume and blog pipeline (single source of truth)
+  data/              # Resume, blog, and projects data (single source of truth)
 ```
 
 ## Content Authoring
@@ -81,6 +111,6 @@ Your content here.
 ## Build
 
 ```bash
-pnpm build
-pnpm start
+npm run build
+npm start
 ```
