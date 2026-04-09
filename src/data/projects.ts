@@ -29,4 +29,14 @@ export const SIDE_PROJECTS: SideProject[] = [
     liveUrl: 'https://sbburgerweekmap.com',
     repoUrl: 'https://github.com/samgutentag/sbburgerweek',
   },
+  {
+    slug: 'gutentag-world',
+    title: 'Gutentag, World!',
+    description:
+      '100+ repos that each say "Gutentag, World!" in a different language — Python, Rust, COBOL, Befunge, a DNS TXT record, you name it.',
+    emoji: '👋',
+    color: '#10b981',
+    liveUrl: 'https://github.com/GutentagWorld',
+    repoUrl: 'https://github.com/samgutentag/GUTENTAGWORLD',
+  },
 ]
