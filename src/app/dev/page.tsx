@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getBlogPosts } from "@/data/blog";
+import { SIDE_PROJECTS } from '@/data/projects'
 
 export const metadata: Metadata = {
   title: "Dev Tools",
@@ -146,6 +147,86 @@ export default async function DevIndexPage() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* ─── Side Projects ─── */}
+      <div className="mt-16">
+        <h2 className="mb-1 text-xl font-bold tracking-tight">Projects</h2>
+        <p className="mb-8 text-xs text-neutral-400">
+          Side projects with their own homes on the web
+        </p>
+
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          {SIDE_PROJECTS.map((project) => (
+            <div key={project.slug} className="flex flex-col">
+              {/* Preview area */}
+              <a
+                href={project.liveUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group no-underline"
+              >
+                <div
+                  className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-2xl transition-all duration-200 group-hover:scale-[1.02] group-hover:shadow-lg"
+                  style={{ background: `${project.color}12` }}
+                >
+                  <div
+                    className="flex h-16 w-16 items-center justify-center rounded-full text-3xl shadow-sm transition-transform duration-200 group-hover:scale-110"
+                    style={{ background: `${project.color}20` }}
+                  >
+                    {project.emoji}
+                  </div>
+                </div>
+              </a>
+
+              {/* Text */}
+              <div className="mt-4 flex flex-col gap-1">
+                <h3 className="text-[14px] font-semibold tracking-tight text-balance">
+                  {project.title}
+                </h3>
+                <p className="text-[12px] leading-relaxed text-neutral-500 dark:text-neutral-400">
+                  {project.description}
+                </p>
+                <div className="mt-1 flex flex-col gap-1 text-[12px]">
+                  <a
+                    href={project.liveUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Visit site
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                      <path
+                        d="M4 12L12 4M12 4H6M12 4v6"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </a>
+                  <a
+                    href={project.repoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    View source
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                      <path
+                        d="M4 12L12 4M12 4H6M12 4v6"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
