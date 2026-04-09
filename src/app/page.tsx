@@ -11,6 +11,7 @@ import Image from "next/image";
 import { DATA } from "@/data/resume";
 import { getBlogPosts } from "@/data/blog";
 import { AnimatedSection } from "@/components/animated-section";
+import { SIDE_PROJECTS } from "@/data/projects";
 import {
   GitHubIcon,
   LinkedInIcon,
@@ -191,6 +192,41 @@ export default async function Home() {
                   </p>
                 </div>
               </div>
+            ))}
+          </div>
+        </section>
+      </AnimatedSection>
+
+      {/* ─── Projects ─── */}
+      <AnimatedSection delay={0.225}>
+        <section>
+          <SectionLabel>Projects</SectionLabel>
+
+          <div className="space-y-5">
+            {SIDE_PROJECTS.map((project) => (
+              <a
+                key={project.slug}
+                href={project.liveUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-center gap-4"
+              >
+                <div
+                  className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-xl text-2xl shadow-sm"
+                  style={{ background: `${project.color}20` }}
+                >
+                  {project.emoji}
+                </div>
+
+                <div>
+                  <p className="text-base font-medium text-foreground group-hover:text-accent transition-colors">
+                    {project.title}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    {project.description}
+                  </p>
+                </div>
+              </a>
             ))}
           </div>
         </section>
