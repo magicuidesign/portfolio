@@ -1,0 +1,97 @@
+---
+title: "When Claude Code Scheduled Tasks Can't See Their MCP Tools"
+publishedAt: "2026-04-09"
+summary: "A debugging story about remote triggers, missing connectors, and the sub-agent workaround that finally unblocked my DevRel pipeline."
+tags: ["claude-code", "mcp", "scheduled-tasks", "debugging", "devrel"]
+draft: true
+---
+
+A few days ago I [wrote about the DevRel pipeline I built](/blog/2026-04-06-automating-devrel-with-cron-and-claude) to scan trunk2 PRs, draft docs, and post Slack summaries while I sleep. Today I sat down to check why it had gone quiet for two days. Turns out it hadn't run successfully since the day I shipped it. This is the story of how I got it working again, and a workaround that might save you some time if you run into the same platform bug.
+
+## The symptoms
+
+The Slack channel was empty. No morning summaries. No deploy alerts. No heartbeats. The log file just had four words: `Not logged in`.
+
+I started at the obvious place. The local cron jobs run `claude -p` with `--dangerously-skip-permissions`, and cron doesn't have access to macOS Keychain, so the interactive OAuth auth I normally use wasn't available. The `.env` file that cron sources had an expired Anthropic API key. Refreshed it.
+
+Next run: `Credit balance is too low`. Generated a new key from console.anthropic.com, dropped it in, tested with a tiny request to the Messages API. Working.
+
+Next run: every MCP tool call came back "no such tool." Linear, Slack, Slite, GitBook. All of them. The pipeline produced real work (it actually drafted three docs PRs and pushed them to branches) but the Linear/Slack/Slite steps were all skipped because the tools weren't loaded.
+
+This is where I hit a wall.
+
+## Why local cron was the wrong architecture
+
+Cloud MCP connectors live on your claude.ai account, not on the local CLI. When you log into claude.ai and authorize a connector like Slack or Linear, that authorization lives on Anthropic's infrastructure. The local `claude` CLI running from cron has no way to reach those connectors. It can call local MCP servers defined in `~/.claude/settings.json`, but not the cloud ones.
+
+The right tool for this job is [remote triggers](https://claude.ai/code/scheduled). They're scheduled tasks that run on Anthropic's cloud infrastructure with your MCP connections attached. I had actually set these up back on April 6 and then forgotten about them when I switched to local cron.
+
+I ripped out the DevRel cron entries, disabled all the broken pieces, and moved everything to remote triggers.
+
+## The actual bug
+
+The remote triggers fired. The connectors were listed in the UI. The runs completed without errors. But the Slack channel stayed empty.
+
+I clicked into a run transcript to see what the agent was actually doing. It was calling `ToolSearch` to discover MCP tool names (as the prompt instructed) and every search was coming back empty. Main agent: no Slack tool. No Linear tool. No Slite tool. No docs search tool. The agent cheerfully worked around it by using `git` and `curl` directly, shipped three docs branches, and ended with this:
+
+```
+Skipped steps (no MCP tools found)
+Linear dedup check — could not verify if v148 was already processed
+Linear changelog tickets — no save_issue tool available
+Linear roadmap tickets — no tool available
+Slack DM to Sam Gutentag — no send_message tool available
+```
+
+I tried removing and re-adding connectors in the web UI. The remove worked. The add button did nothing. No OAuth flow, no error, no connector added. I tried re-attaching via the API. That succeeded at the persistence layer. Next run still couldn't see the tools. I tried creating a brand new trigger from scratch. Same failure mode.
+
+At this point I went hunting on GitHub.
+
+## The workaround
+
+Turns out this is a known bug. Canonical thread is [anthropics/claude-code#35899](https://github.com/anthropics/claude-code/issues/35899), 36 comments deep, with an Anthropic engineer actively investigating. Related threads: [#45306](https://github.com/anthropics/claude-code/issues/45306), [#43661](https://github.com/anthropics/claude-code/issues/43661), [#44796](https://github.com/anthropics/claude-code/issues/44796). The short version: MCP connectors attached to a scheduled task don't initialize in the main agent context. A fix was deployed on April 7, rolled back, redeployed, still not fully working.
+
+Buried in the comments, [hatef-palizgar shared a workaround that actually works](https://github.com/anthropics/claude-code/issues/35899#issuecomment-4217969223): the main agent can't see MCP tools, but sub-agents spawned via the `Agent` tool *can*. The fix has two parts.
+
+First, add `Agent` and `ToolSearch` to the trigger's `session_context.allowed_tools`:
+
+```json
+"allowed_tools": [
+  "Bash", "Read", "Write", "Edit", "Glob", "Grep",
+  "Agent", "ToolSearch"
+]
+```
+
+Second, rewrite the prompt so the main agent only does things that don't need MCP (git, bash, curl, file editing). Every MCP-dependent step gets delegated to a sub-agent with a self-contained prompt. Something like this:
+
+```markdown title="Step 2: Already processed? (sub-agent: Linear)"
+Spawn a sub-agent:
+
+> Use ToolSearch with query "Linear" max_results: 10 to find a Linear issue
+> listing tool. Then search for issues matching the tag name in the Trunk
+> Engineering team. Return matching IDs/titles or NONE FOUND.
+
+If any changelog ticket for this tag exists, exit silently.
+```
+
+Sub-agents get a fresh tool discovery pass when they spawn, and in that pass the MCP tools actually load. Same bug, different scope. Why it works: I don't know. Neither does anyone in the thread. But it works.
+
+## Putting it back together
+
+I built two new triggers with the sub-agent pattern: `daily-devrel-scanner-v2` (runs at 3:52 AM) and `deploy-watcher-v3` (runs at 11 AM). Disabled the three broken originals but kept them around as evidence for the bug report.
+
+Kicked off a manual run of the daily scanner. It went through ~18 PRs, drafted docs updates, created changelog tickets via Linear sub-agent, checked the roadmap in Slite via sub-agent, and posted the morning summary to my Slack test channel. End to end, exactly what it was supposed to do two weeks ago.
+
+## Lessons and leftovers
+
+A few things I'm taking away from this:
+
+- **Cloud MCP connectors don't exist for local CLI runs.** If your automation needs Slack, Linear, or any other connector you've set up on claude.ai, you need remote triggers. There's no way around it.
+- **Remote trigger run history is your friend.** Without the per-run transcripts at claude.ai/code/scheduled, I'd still be staring at an empty Slack channel wondering why. Click into any run to see the full session.
+- **When something this weird happens, check GitHub issues first.** I spent about an hour debugging before searching the repo. The canonical thread had the answer the whole time.
+- **Sub-agents are a legitimate escape hatch.** If the main agent can't do something for platform reasons, delegate. It's ugly. It works.
+
+Still open: the UI bug where you can't add connectors after removing them. I flagged it [in a comment on #35899](https://github.com/anthropics/claude-code/issues/35899#issuecomment-4219909532) but haven't heard anything back yet. Hopefully it gets picked up in the next fix.
+
+## Wrap up
+
+If you're building anything with Claude Code scheduled tasks and MCP connectors, bookmark [#35899](https://github.com/anthropics/claude-code/issues/35899). The sub-agent workaround should get you unstuck until the real fix lands. And if you're running DevRel automation via local cron: you're probably going to hit this same wall eventually. Switch to remote triggers before the connector mismatch silently breaks everything for days.

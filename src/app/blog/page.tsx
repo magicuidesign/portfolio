@@ -68,7 +68,7 @@ export default async function BlogPage() {
 
           return (
             <div key={year} className="space-y-8">
-              <h2 className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+              <h2 className="sticky top-16 z-10 bg-background py-2 text-xs font-medium uppercase tracking-widest text-muted-foreground">
                 {year}
               </h2>
 

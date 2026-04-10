@@ -1,0 +1,39 @@
+---
+title: "Getting Usable Transcripts from Whisper.cpp"
+publishedAt: "2026-04-09"
+summary: "Fixing garbled whisper-cpp transcription by switching to the full-precision model, beam search decoding, and a two-pass workflow."
+tags: ["whisper", "ffmpeg", "audio", "transcription", "bash"]
+draft: true
+---
+
+I have a bash script (`ripa`) that rips audio from stereo `.mov` call recordings and runs them through whisper-cpp for transcription. It splits the stereo channels (your mic on the left, caller on the right) and produces a merged, speaker-labeled transcript. The problem: the transcription output was frequently garbled, especially when the person on the other end had a bad mic. Meanwhile, MacWhisper handled the same files without issue.
+
+## What was wrong
+
+The script was using `ggml-large-v3-q5_0.bin` — a quantized (5-bit precision) version of the large-v3 model. Quantization halves the file size but introduces rounding errors in the attention weights. For clean audio this is fine, but noisy input from cheap mics compounds those errors fast. The result: invented words, repeated phrases, and segments that read like word salad.
+
+## The fix
+
+Three changes:
+
+**Full-precision model.** Swapped to `ggml-large-v3.bin` (~3GB vs ~1.5GB). Same weights MacWhisper uses under the hood. Download once:
+
+```bash title="one-time setup"
+mkdir -p ~/whisper-models
+curl -o ~/whisper-models/ggml-large-v3.bin -L \
+  'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3.bin?download=true'
+```
+
+**Beam search decoding.** Added `--beam-size 5` to the whisper-cli invocation. Instead of greedy decoding (commit to the most likely token at each step), beam search keeps 5 candidate sequences alive and picks the best overall path. Roughly 5x slower per segment but much better at recovering from ambiguous audio.
+
+**Entropy threshold.** Set `--entropy-thold 2.4` explicitly. When whisper encounters unintelligible audio, its output distribution goes high-entropy — it's basically guessing. The threshold gates these segments out instead of letting the model hallucinate text to fill the gap.
+
+## Two-pass workflow
+
+Restructured the script into two passes. Pass 1 rips all the stereo MP3s. Pass 2 handles channel splitting and transcription. This way the audio files are available immediately — I can start reviewing them or feeding them to MacWhisper while whisper-cpp works through the queue.
+
+<!-- TODO: report back on actual quality difference after running a batch -->
+
+## What's next
+
+Need to run this against a batch of recent calls and compare output quality. If large-v3 still hallucinates on particularly rough audio, `large-v2` is worth trying — it's reportedly more conservative with noisy input, less prone to filling silence with fabricated text.

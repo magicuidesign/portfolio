@@ -21,6 +21,7 @@ import Link from "next/link";
 import { MDXRemote } from "next-mdx-remote/rsc";
 import { getPost, getBlogPosts, mdxOptions } from "@/data/blog";
 import { mdxComponents } from "@/components/mdx";
+import { TableOfContents } from "@/components/table-of-contents";
 
 export async function generateStaticParams() {
   const posts = await getBlogPosts();
@@ -62,15 +63,7 @@ export default async function BlogPostPage({
 
   return (
     <article className="pt-4">
-      {/* Back link */}
-      <div className="mb-8">
-        <Link
-          href="/blog"
-          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          ← Back to blog
-        </Link>
-      </div>
+      <TableOfContents source={post.source} />
 
       {/* Post header */}
       <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-foreground">

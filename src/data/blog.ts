@@ -15,6 +15,7 @@ import fs from "fs";
 import path from "path";
 import matter from "gray-matter";
 import remarkGfm from "remark-gfm";
+import rehypeSlug from "rehype-slug";
 import rehypePrettyCode from "rehype-pretty-code";
 import { createHighlighter } from "shiki";
 import { visit } from "unist-util-visit";
@@ -64,6 +65,7 @@ function rehypeWrapTables() {
 export const mdxOptions = {
   remarkPlugins: [remarkGfm] as PluggableList,
   rehypePlugins: [
+    rehypeSlug,
     [
       rehypePrettyCode,
       {

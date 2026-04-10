@@ -69,11 +69,26 @@ We ended up with a "Switch GitHub account" button that clears the app session, r
 
 The repo listing endpoint was another surprise. `GET /user/installations/{id}/repositories` returns repos where *both* the app is installed *and* the user's OAuth token has access. So even if an org admin installs the app on all repos, users who aren't org members only see repos they have direct access to. The dropdown shows what it can; the text input works for anything the app can reach.
 
+## The feedback loop that reshaped everything
+
+Alex went through the report top-to-bottom on a call and the feedback was surgical. The three biggest changes:
+
+**Include bot CI runs.** The original version filtered out dependabot, renovate, github-actions before computing anything. Alex's argument: "What if Claude submits a PR and it fails because of a flaky test? That technically should count." He's right. A failure on main is a failure on main regardless of who triggered it. Now the CI minutes section shows "5.3k CI minutes consumed (635 human, 4.7k bot)" so you can see the split without hiding the data.
+
+**Break CI duration down by workflow.** Aggregating a 30-second linter with a 30-minute nightly test suite into one number is meaningless. Each of the top 3 workflows now gets its own row with a sparkline, run count, average duration, and percent change. The sparklines use daily medians from the main 30-day data (not the sparse 90-day sample) so they actually have enough points to show a trend.
+
+**P90 approved-to-merge, not created-to-merge.** The old number included review wait time, which Trunk can't control. The new metric uses the first approval timestamp as the start. The card shows both segments: "Created to Approved" (your review bottleneck) and "Approved to Merged" (your CI/queue bottleneck). Two different problems, two different solutions.
+
+The deeper insights section got absorbed entirely. Noisiest workflows moved into the CI failure rate card as a breakdown table. CI minutes went into the duration section. Bot activity went into the PR chart. Trigger breakdown and queue saturation got cut (interesting data, doesn't drive action). The report went from a scroll-heavy single-column layout to a compact 4-row grid where the most important numbers are visible without scrolling.
+
+## Loading UX that doesn't lie
+
+The loading screen was a single spinning status line that looked hung on large repos. Now it shows all 10 steps as a checklist with checkmarks. The slow operations (90-day trend sampling, PR review fetching) emit sub-step progress like "Reviewing PR #1234 (5/30)" in faint text below the active step. You always see movement.
+
 ## What's next
 
-- Friday feedback session with Alex reviewing real dashboards
 - Persistent cache for Vercel (Vercel KV or Redis) so audits don't re-run on every visit
-- Render deployment as an alternative — `render.yaml` is already in the repo
-- Icon system refresh with a consistent SVG pack
+- OAuth scope review (the "act on your behalf" permission is technically correct but spooks people)
+- The CI duration "0 seconds" bug needs root cause analysis for repos with very fast workflows
 
-The scoring model version took a week to feel right. The raw numbers version took a day and Alex's reaction was "this is beautiful." Sometimes the right abstraction is no abstraction.
+The scoring model version took a week to feel right. The raw numbers version took a day. The feedback-driven iteration took another day and produced something I'd actually trust if someone sent it to me cold. That's the bar.
