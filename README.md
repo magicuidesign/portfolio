@@ -27,6 +27,7 @@ Side projects with their own live sites, showcased on the `/dev` page and homepa
 
 - [SB Coffee Week Map](https://sbcoffeeweekmap.com) — interactive map for Santa Barbara Coffee Week ([source](https://github.com/samgutentag/sbcoffeeweek))
 - [SB Burger Week Map](https://sbburgerweekmap.com) — interactive map for Santa Barbara Burger Week ([source](https://github.com/samgutentag/sbburgerweek))
+- [Yelp Subtopics, Revisited](https://github.com/samgutentag/yelpsubtopics) — modernized an 8-year-old NLP project with BERTopic, zero-shot classification, and an LLM insight layer
 - [Gutentag, World!](https://github.com/GutentagWorld) — 100+ repos that each say "Gutentag, World!" in a different language ([generator](https://github.com/samgutentag/GUTENTAGWORLD))
 
 ## Theming

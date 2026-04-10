@@ -30,6 +30,15 @@ export const SIDE_PROJECTS: SideProject[] = [
     repoUrl: 'https://github.com/samgutentag/sbburgerweek',
   },
   {
+    slug: 'yelp-subtopics',
+    title: 'Yelp Subtopics, Revisited',
+    description:
+      'Took an 8-year-old NLP side project and rebuilt it with modern tools. BERTopic, zero-shot classification, and an LLM insight layer instead of the old hand-rolled pipeline.',
+    emoji: '🔬',
+    color: '#dc2626',
+    liveUrl: 'https://github.com/samgutentag/yelpsubtopics',
+  },
+  {
     slug: 'gutentag-world',
     title: 'Gutentag, World!',
     description:
