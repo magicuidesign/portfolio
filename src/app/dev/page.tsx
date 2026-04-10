@@ -9,6 +9,85 @@ export const metadata: Metadata = {
   description: "Interactive tools and visualizations.",
 };
 
+/**
+ * Compute a link label from its URL.
+ * - github.com → "View source"
+ * - /blog/...  → "Read the blog post"
+ * - /dev/...   → "Open tool"
+ * - everything else → "Visit site"
+ */
+function getLinkLabel(url: string): string {
+  if (/^https?:\/\/(www\.)?github\.com/.test(url)) return "View source";
+  if (url.startsWith("/blog/")) return "Read the blog post";
+  if (url.startsWith("/dev/")) return "Open tool";
+  return "Visit site";
+}
+
+function isExternal(url: string): boolean {
+  return url.startsWith("http");
+}
+
+const ChevronIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+    <path
+      d="M6 3l5 5-5 5"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const ExternalIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+    <path
+      d="M4 12L12 4M12 4H6M12 4v6"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+/**
+ * Renders a project card link with the right label and icon for its URL.
+ * Internal routes use Next.js <Link> + chevron; external URLs use <a target="_blank"> + diagonal arrow.
+ */
+function ProjectLink({
+  href,
+  primary = false,
+}: {
+  href: string;
+  primary?: boolean;
+}) {
+  const label = getLinkLabel(href);
+  const className = `inline-flex items-center gap-1 ${
+    primary ? "font-medium" : ""
+  } text-muted-foreground hover:text-foreground transition-colors`;
+
+  if (isExternal(href)) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={className}
+      >
+        {label}
+        <ExternalIcon />
+      </a>
+    );
+  }
+  return (
+    <Link href={href} className={className}>
+      {label}
+      <ChevronIcon />
+    </Link>
+  );
+}
+
 interface Project {
   slug: string;
   title: string;
@@ -111,37 +190,9 @@ export default async function DevIndexPage() {
                 {project.description}
               </p>
               <div className="mt-1 flex flex-col gap-1 text-[12px]">
-                <Link
-                  href={`/dev/${project.slug}`}
-                  className="inline-flex items-center gap-1 font-medium text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Open tool
-                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-                    <path
-                      d="M6 3l5 5-5 5"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </Link>
+                <ProjectLink href={`/dev/${project.slug}`} primary />
                 {project.blogSlug && publishedSlugs.has(project.blogSlug) && (
-                  <Link
-                    href={`/blog/${project.blogSlug}`}
-                    className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Read the blog post
-                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-                      <path
-                        d="M6 3l5 5-5 5"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </Link>
+                  <ProjectLink href={`/blog/${project.blogSlug}`} />
                 )}
               </div>
             </div>
@@ -188,42 +239,8 @@ export default async function DevIndexPage() {
                   {project.description}
                 </p>
                 <div className="mt-1 flex flex-col gap-1 text-[12px]">
-                  <a
-                    href={project.liveUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 font-medium text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Visit site
-                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-                      <path
-                        d="M4 12L12 4M12 4H6M12 4v6"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </a>
-                  {project.repoUrl && (
-                    <a
-                      href={project.repoUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      View source
-                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-                        <path
-                          d="M4 12L12 4M12 4H6M12 4v6"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </a>
-                  )}
+                  <ProjectLink href={project.liveUrl} primary />
+                  {project.repoUrl && <ProjectLink href={project.repoUrl} />}
                 </div>
               </div>
             </div>
