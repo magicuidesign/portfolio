@@ -7,7 +7,13 @@
  *
  * Hidden on screens narrower than `xl` since the centered max-w-2xl layout
  * doesn't have room for a sidebar at smaller widths.
+ *
+ * Why this is a client component: native hash links + Next.js App Router +
+ * sticky elements interact badly. Subsequent hash clicks sometimes don't
+ * trigger scroll. We use explicit scrollIntoView to bypass that entirely.
  */
+
+"use client";
 
 import GithubSlugger from "github-slugger";
 
@@ -49,6 +55,15 @@ export function TableOfContents({ source }: { source: string }) {
   // Hide entirely if there are fewer than 2 headings — a TOC of one item is noise.
   if (headings.length < 2) return null;
 
+  function handleClick(e: React.MouseEvent<HTMLAnchorElement>, slug: string) {
+    e.preventDefault();
+    const el = document.getElementById(slug);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+    // Update the URL without triggering Next.js navigation
+    window.history.pushState(null, "", `#${slug}`);
+  }
+
   return (
     <aside
       aria-label="Table of contents"
@@ -62,6 +77,7 @@ export function TableOfContents({ source }: { source: string }) {
           <li key={heading.slug}>
             <a
               href={`#${heading.slug}`}
+              onClick={(e) => handleClick(e, heading.slug)}
               className="text-muted-foreground hover:text-foreground transition-colors block leading-snug"
             >
               {heading.text}

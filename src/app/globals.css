@@ -192,6 +192,8 @@ figure[data-rehype-pretty-code-figure]:has(pre[data-language="prompt"]) pre {
   padding-top: 0.5rem;
   padding-bottom: 0.5rem;
   margin-top: 2rem;
+  /* scroll-margin-top ensures anchor links from the TOC land below the sticky nav */
+  scroll-margin-top: 5rem;
 }
 
 /* ─── prose overrides for inline code ─── */
