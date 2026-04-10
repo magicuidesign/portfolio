@@ -1,22 +1,22 @@
 ---
 title: "Getting Usable Transcripts from Whisper.cpp"
 publishedAt: "2026-04-09"
-summary: "Fixing garbled whisper-cpp transcription by switching to the full-precision model, beam search decoding, and a two-pass workflow."
-tags: ["whisper", "ffmpeg", "audio", "transcription", "bash"]
+summary: "Fixing garbled whisper-cpp transcription: full-precision model, hallucination loops, a stdin pipe bug, and a progress bar."
+tags: ["whisper", "ffmpeg", "audio", "transcription", "bash", "debugging"]
 draft: true
 ---
 
-I have a bash script (`ripa`) that rips audio from stereo `.mov` call recordings and runs them through whisper-cpp for transcription. It splits the stereo channels (your mic on the left, caller on the right) and produces a merged, speaker-labeled transcript. The problem: the transcription output was frequently garbled, especially when the person on the other end had a bad mic. Meanwhile, MacWhisper handled the same files without issue.
+I have a bash script (`ripa`) that rips audio from stereo `.mov` call recordings and runs them through whisper-cpp for transcription. It splits the stereo channels (my mic on the left, caller on the right) and produces a merged, speaker-labeled transcript. The problem: the transcription output was frequently garbled, especially when the person on the other end had a bad mic. Meanwhile, MacWhisper handled the same files without issue.
+
+This is the story of how I got from "garbage output" to "actually useful transcripts," and the three or four bugs I hit along the way.
 
 ## What was wrong
 
 The script was using `ggml-large-v3-q5_0.bin` — a quantized (5-bit precision) version of the large-v3 model. Quantization halves the file size but introduces rounding errors in the attention weights. For clean audio this is fine, but noisy input from cheap mics compounds those errors fast. The result: invented words, repeated phrases, and segments that read like word salad.
 
-## The fix
+## Fix 1: full-precision model
 
-Three changes:
-
-**Full-precision model.** Swapped to `ggml-large-v3.bin` (~3GB vs ~1.5GB). Same weights MacWhisper uses under the hood. Download once:
+Swapped to `ggml-large-v3.bin` (~3GB vs ~1.5GB). Same weights MacWhisper uses under the hood.
 
 ```bash title="one-time setup"
 mkdir -p ~/whisper-models
@@ -24,16 +24,115 @@ curl -o ~/whisper-models/ggml-large-v3.bin -L \
   'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3.bin?download=true'
 ```
 
-**Beam search decoding.** Added `--beam-size 5` to the whisper-cli invocation. Instead of greedy decoding (commit to the most likely token at each step), beam search keeps 5 candidate sequences alive and picks the best overall path. Roughly 5x slower per segment but much better at recovering from ambiguous audio.
+Also added `--beam-size 5` for beam search decoding. Instead of greedy decoding (commit to the most likely token at each step), beam search keeps 5 candidate sequences alive and picks the best overall path. Roughly 5x slower per segment but much better at recovering from ambiguous audio.
 
-**Entropy threshold.** Set `--entropy-thold 2.4` explicitly. When whisper encounters unintelligible audio, its output distribution goes high-entropy — it's basically guessing. The threshold gates these segments out instead of letting the model hallucinate text to fill the gap.
+## Fix 2: hallucination loops
 
-## Two-pass workflow
+First run with the new model, and the transcript had this beautiful gem:
 
-Restructured the script into two passes. Pass 1 rips all the stereo MP3s. Pass 2 handles channel splitting and transcription. This way the audio files are available immediately — I can start reviewing them or feeding them to MacWhisper while whisper-cpp works through the queue.
+```text
+[00:25:00.420 --> 00:25:06.500] I think that's a reasonable like stop midpoint
+[00:25:06.500 --> 00:25:08.500] I think that's a reasonable like stop midpoint
+[00:25:08.500 --> 00:25:10.500] I think that's a reasonable like stop midpoint
+[00:25:10.500 --> 00:25:12.500] I think that's a reasonable like stop midpoint
+... (for about 90 seconds)
+```
 
-<!-- TODO: report back on actual quality difference after running a batch -->
+Classic whisper hallucination loop. Whisper uses a sliding-context window — each segment's decoded text becomes context for the next. When the audio goes quiet or garbled, the model hallucinates *something*, that hallucination becomes the context for the next segment, which reinforces the loop, and off it goes.
 
-## What's next
+The fix is `--max-context 0` (the `-mc 0` flag), which disables context carryover. Each segment is decoded independently. Slightly less coherent across segment boundaries, but impossible to get stuck in a feedback loop.
 
-Need to run this against a batch of recent calls and compare output quality. If large-v3 still hallucinates on particularly rough audio, `large-v2` is worth trying — it's reportedly more conservative with noisy input, less prone to filling silence with fabricated text.
+I initially tried `--no-context`, which seemed like the obvious flag name. Turns out it doesn't exist in whisper-cpp. The script was silently failing because of the unrecognized flag — which became its own problem.
+
+## Fix 3: the SRT files weren't being written
+
+After adding `--no-context` (before I realized it didn't exist), the script started reporting failures:
+
+```text
+[1/7] 26-04-09-alex-sync-large-model
+  → You    [██████████████████████████████] 100% (42:43/42:43)
+  → Caller [██████████████████████████████] 100% (42:43/42:43)
+  ✗ Transcription failed (one or both channels missing)
+```
+
+The progress bar said 100%. Whisper was clearly running. But the SRT files didn't exist. I spent longer than I'd like to admit chasing this one.
+
+The first theory was that piping whisper-cli's stdout to a progress bar was somehow preventing the SRT write. Tested that directly — SRT files got created fine with a pipe. So it wasn't the pipe itself.
+
+The actual bug was more interesting. The progress bar is a Python script, and I was using a bash heredoc to pass it inline:
+
+```bash
+whisper-cli ... | python3 - "$label" "$duration" <<'PYEOF'
+# python code here
+PYEOF
+```
+
+The `python3 -` means "read script from stdin." But the heredoc *also* feeds stdin. And so does the pipe from whisper-cli. Three things fighting over one file descriptor.
+
+The pipe wins. So Python tries to interpret whisper-cli's output — lines like `[00:01:00.000 --> 00:01:29.980]   Thank you.` — as Python source code. It hits a `SyntaxError: leading zeros in decimal integer literals are not permitted`, crashes, and the crash sends SIGPIPE to whisper-cli, which terminates before it can write the SRT file.
+
+The fix is to write the Python script to a temp file on script startup, then call `python3 "$PROGRESS_SCRIPT"` — no heredoc, no stdin conflict.
+
+```bash title="working approach"
+PROGRESS_SCRIPT=$(mktemp /tmp/whisper_progress_XXXX.py)
+trap 'rm -f "$PROGRESS_SCRIPT"' EXIT
+cat > "$PROGRESS_SCRIPT" <<'PYEOF'
+# python code
+PYEOF
+
+# later:
+whisper-cli ... | python3 "$PROGRESS_SCRIPT" "$label" "$duration" "$bar_width"
+```
+
+The `trap` cleans up the temp file on exit.
+
+## Fix 4: quiet audio
+
+My recordings had the caller channel deliberately turned down to around 40% so it wouldn't blow out my mic during playback. Whisper doesn't care about playback comfort — it wants consistent, loud audio. Added an ffmpeg `loudnorm` filter when splitting channels:
+
+```bash
+ffmpeg -i "$input_file" \
+  -af "pan=mono|c0=c1,loudnorm=I=-16:TP=-1.5:LRA=11" \
+  -ar 16000 -ac 1 -c:a pcm_s16le \
+  "$tmp_caller" -y
+```
+
+`loudnorm` is EBU R128 loudness normalization — the broadcast standard. `I=-16` sets integrated loudness to -16 LUFS (good for speech), `TP=-1.5` caps true peaks at -1.5 dB, `LRA=11` sets the loudness range. Both channels come out at roughly the same volume, which makes whisper's life much easier.
+
+## A progress bar instead of a wall of text
+
+Along the way, the other improvement was replacing whisper-cli's default behavior (dumping every transcript line to stdout as it's processed) with an actual progress bar. The transcript text still lands in the SRT file via `--output-srt --output-file`, so I can parse the timestamps off stdout to compute progress against the audio duration from `ffprobe`.
+
+```text
+[1/7] 26-04-19-all-hands-02-merge
+  → Splitting channels...
+  → You    [████████████████░░░░░░░░░░░░░░]  54% (17:03/31:34)
+```
+
+Much easier to look at.
+
+## The results
+
+I had the same ~42 minute recording transcribed by both the old (quantized, no fixes) and new (full-precision, all fixes) versions. The diff:
+
+| Metric | Old | New |
+|---|---|---|
+| Lines | 2,265 | 845 |
+| Hallucination loops | yes | none |
+| Punctuation | none | proper |
+| "Santa Barbara" | "santa pabra" | "Santa Barbara" |
+| "SaaS-pocalypse" | "sass sass apocalypse" | "SaaS-pocalypse" |
+
+63% fewer lines not because it's missing content, but because the old version had duplicate segments and repetition loops inflating the count. The new version reads like something a human typed.
+
+## Takeaways
+
+A few things I'll remember:
+
+- **Don't trust quantized models for noisy audio.** The accuracy cliff is steeper than the size savings suggest.
+- **Beam search is worth the 5x slowdown.** Greedy decoding gets stuck on ambiguous audio.
+- **Context carryover is the root of hallucination loops.** `-mc 0` is the escape hatch.
+- **`python3 -` plus a heredoc plus a pipe is a trap.** Three things can't share one stdin.
+- **Normalize loudness before whisper sees the audio.** It's a cheap fix for inconsistent recording levels.
+
+The full script is in my [gutils repo](https://github.com/samgutentag/gutils) as `scripts/extract_audio_stereo.sh`.
