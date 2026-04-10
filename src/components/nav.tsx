@@ -21,27 +21,29 @@ export function Nav() {
   const pathname = usePathname();
 
   return (
-    <nav className="mx-auto max-w-2xl px-6 py-6 flex items-center justify-between">
-      <Link href="/" className="text-sm font-semibold text-foreground">
-        Sam Gutentag
-      </Link>
+    <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md">
+      <nav className="mx-auto max-w-2xl px-6 py-6 flex items-center justify-between">
+        <Link href="/" className="text-sm font-semibold text-foreground">
+          Sam Gutentag
+        </Link>
 
-      <div className="flex items-center gap-6">
-        {links.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className={`text-sm transition-colors ${
-              pathname.startsWith(link.href)
-                ? "text-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {link.label}
-          </Link>
-        ))}
-        <ThemeToggle />
-      </div>
-    </nav>
+        <div className="flex items-center gap-6">
+          {links.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`text-sm transition-colors ${
+                pathname.startsWith(link.href)
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {link.label}
+            </Link>
+          ))}
+          <ThemeToggle />
+        </div>
+      </nav>
+    </header>
   );
 }
