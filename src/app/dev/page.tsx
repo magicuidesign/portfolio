@@ -133,6 +133,15 @@ const projects: Project[] = [
     color: "#d97706",
     blogSlug: "2026-03-23-mdx-components-for-the-blog",
   },
+  {
+    slug: "cloud-cover",
+    title: "Cloud Cover",
+    description:
+      "Live cloud cover dashboard for Santa Barbara with multi-source estimates.",
+    emoji: "☁️",
+    color: "#0ea5e9",
+    blogSlug: "2026-02-05-claude-cover",
+  },
 ];
 
 export default async function DevIndexPage() {
