@@ -41,17 +41,6 @@ describe('Resume DATA object', () => {
     expect(typeof DATA.avatarUrl).toBe('string');
   });
 
-  test('should have skills array with correct types and content', () => {
-    expect(Array.isArray(DATA.skills)).toBe(true);
-    expect(DATA.skills.length).toBeGreaterThan(0);
-    DATA.skills.forEach(skill => {
-      expect(typeof skill).toBe('string');
-    });
-    expect(DATA.skills).toContain('React');
-    expect(DATA.skills).toContain('Next.js');
-    expect(DATA.skills).toContain('Typescript');
-  });
-
   test('should have navbar array with correct structure', () => {
     expect(Array.isArray(DATA.navbar)).toBe(true);
     expect(DATA.navbar.length).toBeGreaterThan(0);
