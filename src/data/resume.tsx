@@ -202,6 +202,32 @@ export const DATA = {
   ],
   projects: [
     {
+      title: "Brain Sort",
+      href: "/projects/brainsort",
+      dates: "2025",
+      active: true,
+      description:
+        "Built and shipped a mobile brain-training game from scratch — a calm, private-by-design collection of **8 puzzle games** (Water Sort, Ball Sort, Tower Sort, Connect Dots, and more) wrapped in daily streaks to build a habit. Coming soon to the App Store & Google Play.",
+      technologies: [
+        "React Native",
+        "Expo",
+        "Expo Router",
+        "TypeScript",
+        "Reanimated",
+        "iOS",
+        "Android",
+      ],
+      links: [
+        {
+          type: "Learn More",
+          href: "/projects/brainsort",
+          icon: <Icons.globe className="size-3" />,
+        },
+      ],
+      image: "/brainsort/screenshots/01-home.png",
+      video: "",
+    },
+    {
       title: "Chat Collect",
       href: "https://chatcollect.com",
       dates: "Jan 2024 - Feb 2024",
