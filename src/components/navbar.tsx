@@ -10,19 +10,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 
-const HOME_SECTIONS = [
-  { href: "#about", label: "About" },
-  { href: "#projects", label: "Projects" },
-  { href: "#contact", label: "Contact" },
-];
+
 
 export default function Navbar() {
   const pathname = usePathname();
   const isHomePage = pathname === "/";
-  const desktopLinks = isHomePage ? HOME_SECTIONS : DATA.navbar;
+  
   const socialLinks = Object.entries(DATA.contact.social)
-    .filter(([_, social]) => social.navbar)
-    .slice(0, 3);
+    .filter(([_, social]) => social.navbar);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -40,29 +35,7 @@ export default function Navbar() {
             <BrandLogo className="size-5" />
           </Link>
 
-          <nav className="hidden items-center gap-5 md:flex">
-            {desktopLinks.map((item) => {
-              const isActive =
-                item.href.startsWith("#")
-                  ? false
-                  : item.href === "/"
-                    ? pathname === "/"
-                    : pathname.startsWith(item.href);
-
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "text-sm font-medium transition-colors hover:text-foreground",
-                    isActive ? "text-foreground" : "text-muted-foreground"
-                  )}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
+          
         </div>
 
         <div className="flex items-center gap-2">
@@ -140,18 +113,7 @@ export default function Navbar() {
                 <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   Sections
                 </p>
-                <div className="flex flex-col gap-2">
-                  {HOME_SECTIONS.map((section) => (
-                    <Link
-                      key={`mobile-section-${section.href}`}
-                      href={section.href}
-                      className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent/30 hover:text-foreground"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      {section.label}
-                    </Link>
-                  ))}
-                </div>
+               
               </div>
             )}
 

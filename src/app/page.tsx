@@ -12,6 +12,7 @@ import ProjectsSection from "@/components/section/projects-section";
 import { ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import DesignSection from "@/components/section/design-section";
+import GitHubSection from "@/components/section/github-section";
 
 const BLUR_FADE_DELAY = 0.04;
 
@@ -184,6 +185,11 @@ export default function Page() {
       <section id="design">
         <BlurFade delay={BLUR_FADE_DELAY * 13}>
           <DesignSection/>
+        </BlurFade>
+      </section>
+      <section id="contributions">
+        <BlurFade delay={BLUR_FADE_DELAY * 15}>
+          <GitHubSection />
         </BlurFade>
       </section>
       <section id="contact">

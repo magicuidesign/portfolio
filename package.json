@@ -24,6 +24,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "content-collections": "^0.2.1",
+    "date-fns": "^4.4.0",
     "lenis": "^1.3.18",
     "lucide-react": "^0.562.0",
     "motion": "^12.23.27",

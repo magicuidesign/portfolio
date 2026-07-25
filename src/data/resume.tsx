@@ -22,6 +22,7 @@ import SSC from "../assets/scc.png";
 import NMU from "../assets/nmu.png";
 import Sumago from ".././assets/sumago.png";
 import Acmegrade from '../assets/acmegrade.png'
+
 export const DATA = {
   name: "Uday Ahire",
   initials: "UA",
@@ -42,7 +43,7 @@ export const DATA = {
     "focused on building responsive web applications and practical digital products.",
 
   summary:
-    "I am a frontend developer driven by the challenge of creating seamless digital products. With a deep focus on React, Next.js, and the modern web ecosystem, I bridge the gap between complex backend logic and pixel-perfect user interfaces.\n\nI believe in writing clean, scalable code and building components that are as beautiful under the hood as they are on the screen. My goal is always to deliver value through performance and exceptional user experience.\n\nCurrently, I am exploring advanced frontend patterns and performance optimization techniques to build even faster and more reliable web applications that users love.",
+    "I am a frontend developer driven by the challenge of creating seamless digital products. With a deep focus on React, Next.js, and the modern web ecosystem, I bridge the gap between complex backend logic and pixel-perfect user interfaces.\n\nI believe in writing clean, scalable code and building components that are as beautiful under the hood as they are on the screen. My goal is always to deliver value through performance and exceptional user experience.\n\nCurrently building NMU STUDY HUB - a university-based study platform designed to help students access academic resources more efficiently. Leveraging modern frontend architecture, performance optimization, and exceptional UX to deliver a seamless educational experience.",
   avatarUrl: "https://avatars.githubusercontent.com/u/166685625?v=4",
   skills: [
     { name: "React", icon: ReactLight },
@@ -74,6 +75,19 @@ export const DATA = {
         name: "LinkedIn",
         url: "https://linkedin.com/in/uday-ahire-0855b22b4",
         icon: Icons.linkedin,
+        navbar: true,
+      },
+      X: {
+        name: "X",
+        url: "https://x.com/uday_ahire",
+        icon: Icons.x,
+        navbar: true,
+      },
+
+      Monkeytype: {
+        name: "Monkeytype",
+        url: "https://monkeytype.com/profile/uday_ahire",
+        icon: Icons.monkeytype,
         navbar: true,
       },
       email: {
@@ -142,43 +156,14 @@ export const DATA = {
     }
   ],
   projects: [
-    {
-      title: "UDX UI KIT",
-      href: "https://github.com/udayahire2/udx-ui",
-      dates: "Jan 2025 - Present",
-      active: true,
-      description:
-        "A reusable component library designed to help developers build clean and consistent user interfaces faster.",
-      technologies: [
-        "Next.js",
-        "Typescript",
-        "TailwindCSS",
-        "Framer Motion",
-        "Shadcn UI",
-        "GSAP",
-      ],
-      links: [
-        {
-          type: "Website",
-          href: "https://github.com/udayahire2",
-          icon: <Icons.globe className="size-3" />,
-        },
-        {
-          type: "Source",
-          href: "https://github.com/udayahire2",
-          icon: <Icons.github className="size-3" />,
-        },
-      ],
-      image: "",
-      video: "",
-    },
+
     {
       title: "NMU STUDY HUB",
       href: "https://github.com/udayahire2/nmu",
-      dates: "June 2025 - Nov 2025",
-      active: false,
+      dates: "June 2025 - Present",
+      active: true,
       description:
-        "A web platform designed to help students access academic resources more easily. The project focuses on organizing study materials and simplifying the process of finding important educational content.",
+        "Currently building a comprehensive university-based study platform for North Maharashtra University students. Focused on organizing academic resources, simplifying content discovery, and creating an intuitive interface for accessing study materials, notes, and educational content.",
       technologies: [
         "Next.js",
         "Typescript",
@@ -201,42 +186,12 @@ export const DATA = {
       image: "",
       video: "",
     },
-    {
-      title: "Portfolio",
-      href: "https://github.com/udayahire2/uday-portfolio",
-      dates: "June 2025 - Nov 2025",
-      active: true,
-      description:
-        "Build a Portfolio Templater For Developer and UIUX Designer",
-      technologies: [
-        "Next.js",
-        "Typescript",
-        "TailwindCSS",
-        "Shadcn UI",
-        "Lenis",
-        "GSAP",
-        "Framer Motion",
-      ],
-      links: [
-        {
-          type: "Website",
-          href: "https://udayahireexe.vercel.app/",
-          icon: <Icons.globe className="size-3" />,
-        },
-        {
-          type: "Source",
-          href: "https://github.com/udayahire2/nmu",
-          icon: <Icons.github className="size-3" />,
-        },
-      ],
-      image: "",
-      video: "",
-    },
+
     {
       title: "Local Govern Panchayat Management",
       href: "https://github.com/udayahire2/uday-portfolio",
       dates: "June 2025 - Nov 2025",
-      active: true,
+      active: false,
       description:
         "A web-based management system designed to help local village administration manage records and services such as taxes, certificates, government schemes, and citizen information more efficiently.",
       technologies: [
