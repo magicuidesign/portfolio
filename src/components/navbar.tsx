@@ -1,97 +1,149 @@
-import { Dock, DockIcon } from "@/components/magicui/dock";
+"use client";
+
+import { BrandLogo } from "@/components/brand-logo";
+import { MenuIcon } from "@/components/menu";
 import { ModeToggle } from "@/components/mode-toggle";
-import { Separator } from "@/components/ui/separator";
-import {
-  Tooltip,
-  TooltipArrow,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { DATA } from "@/data/resume";
+import { cn } from "@/lib/utils";
+import { X } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
+
+
 
 export default function Navbar() {
+  const pathname = usePathname();
+  const isHomePage = pathname === "/";
+  
+  const socialLinks = Object.entries(DATA.contact.social)
+    .filter(([_, social]) => social.navbar);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
+
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-4 z-30">
-      <Dock className="z-50 pointer-events-auto relative h-14 p-2 w-fit mx-auto flex gap-2 border bg-card/90 backdrop-blur-3xl shadow-[0_0_10px_3px] shadow-primary/5">
-        {DATA.navbar.map((item) => {
-          const isExternal = item.href.startsWith("http");
-          return (
-            <Tooltip key={item.href}>
-              <TooltipTrigger asChild>
-                <a
-                  href={item.href}
-                  target={isExternal ? "_blank" : undefined}
-                  rel={isExternal ? "noopener noreferrer" : undefined}
-                >
-                  <DockIcon className="rounded-3xl cursor-pointer size-full bg-background p-0 text-muted-foreground hover:text-foreground hover:bg-muted backdrop-blur-3xl border border-border transition-colors">
-                    <item.icon className="size-full rounded-sm overflow-hidden object-contain" />
-                  </DockIcon>
-                </a>
-              </TooltipTrigger>
-              <TooltipContent
-                side="top"
-                sideOffset={8}
-                className="rounded-xl bg-primary text-primary-foreground px-4 py-2 text-sm shadow-[0_10px_40px_-10px_rgba(0,0,0,0.3)] dark:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)]"
-              >
-                <p>{item.label}</p>
-                <TooltipArrow className="fill-primary" />
-              </TooltipContent>
-            </Tooltip>
-          );
-        })}
-        <Separator
-          orientation="vertical"
-          className="h-2/3 m-auto w-px bg-border"
-        />
-        {Object.entries(DATA.contact.social)
-          .filter(([_, social]) => social.navbar)
-          .map(([name, social], index) => {
-            const isExternal = social.url.startsWith("http");
-            const IconComponent = social.icon;
-            return (
-              <Tooltip key={`social-${name}-${index}`}>
-                <TooltipTrigger asChild>
-                  <a
-                    href={social.url}
-                    target={isExternal ? "_blank" : undefined}
-                    rel={isExternal ? "noopener noreferrer" : undefined}
-                  >
-                    <DockIcon className="rounded-3xl cursor-pointer size-full bg-background p-0 text-muted-foreground hover:text-foreground hover:bg-muted backdrop-blur-3xl border border-border transition-colors">
-                      <IconComponent className="size-full rounded-sm overflow-hidden object-contain" />
-                    </DockIcon>
-                  </a>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="top"
-                  sideOffset={8}
-                  className="rounded-xl bg-primary text-primary-foreground px-4 py-2 text-sm shadow-[0_10px_40px_-10px_rgba(0,0,0,0.3)] dark:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)]"
-                >
-                  <p>{name}</p>
-                  <TooltipArrow className="fill-primary" />
-                </TooltipContent>
-              </Tooltip>
-            );
-          })}
-        <Separator
-          orientation="vertical"
-          className="h-2/3 m-auto w-px bg-border"
-        />
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <DockIcon className="rounded-3xl cursor-pointer size-full bg-background p-0 text-muted-foreground hover:text-foreground hover:bg-muted backdrop-blur-3xl border border-border transition-colors">
-              <ModeToggle className="size-full cursor-pointer" />
-            </DockIcon>
-          </TooltipTrigger>
-          <TooltipContent
-            side="top"
-            sideOffset={8}
-            className="rounded-xl bg-primary text-primary-foreground px-4 py-2 text-sm shadow-[0_10px_40px_-10px_rgba(0,0,0,0.3)] dark:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)]"
+    <header className="fixed inset-x-0 top-0 z-50 h-14 w-full border-b border-border/40 bg-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
+      <div className="mx-auto flex h-full max-w-5xl items-center justify-between px-6 sm:px-8">
+        <div className="flex items-center gap-6">
+          <Link
+            href="/"
+            className="flex items-center gap-2.5 transition-opacity hover:opacity-80"
           >
-            <p>Theme</p>
-            <TooltipArrow className="fill-primary" />
-          </TooltipContent>
-        </Tooltip>
-      </Dock>
-    </div>
+            <BrandLogo className="size-5" />
+          </Link>
+
+          
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="mx-2 hidden h-4 w-px bg-border/40 md:block" />
+
+          <div className="hidden items-center gap-1 sm:flex">
+            {socialLinks.map(([name, social]) => {
+              const IconComponent = social.icon;
+              return (
+                <a
+                  key={name}
+                  href={social.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  aria-label={name}
+                >
+                  <IconComponent className="size-4" />
+                </a>
+              );
+            })}
+          </div>
+
+          <ModeToggle className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground" />
+
+          <button
+            type="button"
+            className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground md:hidden"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+          >
+            {isMobileMenuOpen ? <X className="size-4" /> : <MenuIcon className="size-4" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && (
+        <div className="border-b border-border/40 bg-background/95 px-6 py-6 backdrop-blur-xl md:hidden">
+          <nav className="flex flex-col gap-6">
+            <div className="space-y-3">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Navigation
+              </p>
+              <div className="flex flex-col gap-2">
+                {DATA.navbar.filter((item) => item.href !== "/blog").map((item) => {
+                  const isActive =
+                    item.href === "/"
+                      ? pathname === "/"
+                      : pathname.startsWith(item.href);
+                  const IconComponent = item.icon;
+
+                  return (
+                    <Link
+                      key={`mobile-${item.href}`}
+                      href={item.href}
+                      className={cn(
+                        "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                        isActive
+                          ? "bg-accent/50 text-foreground"
+                          : "text-muted-foreground hover:bg-accent/30 hover:text-foreground"
+                      )}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <IconComponent className="size-4" />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+
+            {isHomePage && (
+              <div className="space-y-3">
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Sections
+                </p>
+               
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Socials
+              </p>
+              <div className="flex items-center gap-2 px-1">
+                {Object.entries(DATA.contact.social)
+                  .filter(([_, social]) => social.navbar)
+                  .map(([name, social]) => {
+                    const IconComponent = social.icon;
+                    return (
+                      <a
+                        key={`mobile-social-${name}`}
+                        href={social.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex size-10 items-center justify-center rounded-md border border-border/40 bg-background transition-colors hover:bg-accent hover:text-foreground"
+                        aria-label={name}
+                      >
+                        <IconComponent className="size-[1.125rem]" />
+                      </a>
+                    );
+                  })}
+              </div>
+            </div>
+          </nav>
+        </div>
+      )}
+    </header>
   );
 }

@@ -30,6 +30,7 @@ interface Props {
   href?: string;
   description: string;
   dates: string;
+  active?: boolean;
   tags: readonly string[];
   link?: string;
   image?: string;
@@ -47,6 +48,7 @@ export function ProjectCard({
   href,
   description,
   dates,
+  active,
   tags,
   link,
   image,
@@ -57,7 +59,7 @@ export function ProjectCard({
   return (
     <div
       className={cn(
-        "flex flex-col h-full border border-border rounded-xl overflow-hidden hover:ring-2 cursor-pointer hover:ring-muted transition-all duration-200",
+        "flex h-full cursor-pointer flex-col overflow-hidden rounded-xl border border-border transition-all duration-200 hover:ring-2 hover:ring-muted",
         className
       )}
     >
@@ -105,10 +107,23 @@ export function ProjectCard({
           </div>
         )}
       </div>
-      <div className="p-6 flex flex-col gap-3 flex-1">
-        <div className="flex items-start justify-between gap-2">
+      <div className="flex flex-1 flex-col gap-3 p-5 sm:p-6">
+        <div className="flex items-start justify-between gap-3">
           <div className="flex flex-col gap-1">
-            <h3 className="font-semibold">{title}</h3>
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="font-semibold">{title}</h3>
+              <Badge
+                className={cn(
+                  "h-6 rounded-full border px-2.5 text-[11px] font-medium",
+                  active
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/80 dark:bg-emerald-950/50 dark:text-emerald-300"
+                    : "border-border bg-muted/70 text-muted-foreground"
+                )}
+                variant="outline"
+              >
+                {active ? "Working" : "Completed"}
+              </Badge>
+            </div>
             <time className="text-xs text-muted-foreground">{dates}</time>
           </div>
           <Link
@@ -125,11 +140,11 @@ export function ProjectCard({
           <Markdown>{description}</Markdown>
         </div>
         {tags && tags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-auto">
+          <div className="mt-auto flex flex-wrap gap-1.5">
             {tags.map((tag) => (
               <Badge
                 key={tag}
-                className="text-[11px] font-medium border border-border h-6 w-fit px-2"
+                className="h-6 w-fit border border-border px-2 text-[11px] font-medium"
                 variant="outline"
               >
                 {tag}

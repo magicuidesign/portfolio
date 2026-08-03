@@ -1,5 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
+import type { StaticImageData } from "next/image";
+import Image from "next/image";
 import { useState } from "react";
 import {
   Accordion,
@@ -11,7 +13,7 @@ import { DATA } from "@/data/resume";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-function LogoImage({ src, alt }: { src: string; alt: string }) {
+function LogoImage({ src, alt }: { src: string | StaticImageData; alt: string }) {
   const [imageError, setImageError] = useState(false);
 
   if (!src || imageError) {
@@ -21,31 +23,33 @@ function LogoImage({ src, alt }: { src: string; alt: string }) {
   }
 
   return (
-    <img
+    <Image
       src={src}
       alt={alt}
-      className="size-8 md:size-10 p-1 border rounded-full shadow ring-2 ring-border overflow-hidden object-contain flex-none"
+      width={40}
+      height={40}
+      className="size-8 md:size-10 p-1 border rounded-full shadow ring-2 ring-border object-contain flex-none"
       onError={() => setImageError(true)}
     />
   );
 }
 
-export default function WorkSection() {
+export default function InternshipSection() {
   return (
     <Accordion type="single" collapsible className="w-full grid gap-6">
-      {DATA.work.map((work) => (
+      {DATA.internships.map((internship) => (
         <AccordionItem
-          key={work.company}
-          value={work.company}
+          key={internship.company}
+          value={internship.company}
           className="w-full border-b-0 grid gap-2"
         >
           <AccordionTrigger className="hover:no-underline p-0 cursor-pointer transition-colors rounded-none group [&>svg]:hidden">
-            <div className="flex items-center gap-x-3 justify-between w-full text-left">
+            <div className="flex w-full flex-col gap-3 text-left sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-x-3 flex-1 min-w-0">
-                <LogoImage src={work.logoUrl} alt={work.company} />
+                <LogoImage src={internship.logoUrl} alt={internship.company} />
                 <div className="flex-1 min-w-0 gap-0.5 flex flex-col">
                   <div className="font-semibold leading-none flex items-center gap-2">
-                    {work.company}
+                    {internship.company}
                     <span className="relative inline-flex items-center w-3.5 h-3.5">
                       <ChevronRight
                         className={cn(
@@ -65,23 +69,22 @@ export default function WorkSection() {
                     </span>
                   </div>
                   <div className="font-sans text-sm text-muted-foreground">
-                    {work.title}
+                    {internship.title}
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-1 text-xs tabular-nums text-muted-foreground text-right flex-none">
+              <div className="pl-11 text-xs tabular-nums text-muted-foreground sm:pl-0 sm:text-right">
                 <span>
-                  {work.start} - {work.end ?? "Present"}
+                  {internship.start} - {internship.end ?? "Present"}
                 </span>
               </div>
             </div>
           </AccordionTrigger>
-          <AccordionContent className="p-0 ml-13 text-xs sm:text-sm text-muted-foreground">
-            {work.description}
+          <AccordionContent className="p-0 pl-11 text-xs text-muted-foreground sm:pl-13 sm:text-sm">
+            {internship.description}
           </AccordionContent>
         </AccordionItem>
       ))}
     </Accordion>
   );
 }
-
