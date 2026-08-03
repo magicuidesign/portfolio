@@ -182,11 +182,6 @@ export default function Page() {
           <ProjectsSection />
         </BlurFade>
       </section>
-      <section id="design">
-        <BlurFade delay={BLUR_FADE_DELAY * 13}>
-          <DesignSection/>
-        </BlurFade>
-      </section>
       <section id="contributions">
         <BlurFade delay={BLUR_FADE_DELAY * 15}>
           <GitHubSection />
