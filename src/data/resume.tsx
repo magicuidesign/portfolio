@@ -5,12 +5,9 @@ import { NextjsIconDark } from "@/components/ui/svgs/nextjsIconDark";
 import { Typescript } from "@/components/ui/svgs/typescript";
 import { Nodejs } from "@/components/ui/svgs/nodejs";
 import { Python } from "@/components/ui/svgs/python";
-import { Golang } from "@/components/ui/svgs/golang";
 import { Postgresql } from "@/components/ui/svgs/postgresql";
 import { Docker } from "@/components/ui/svgs/docker";
-import { Kubernetes } from "@/components/ui/svgs/kubernetes";
 import { Java } from "@/components/ui/svgs/java";
-import { Csharp } from "@/components/ui/svgs/csharp";
 
 export const DATA = {
   name: "AbuLara",
@@ -30,12 +27,9 @@ export const DATA = {
     { name: "Typescript", icon: Typescript },
     { name: "Node.js", icon: Nodejs },
     { name: "Python", icon: Python },
-    { name: "Go", icon: Golang },
     { name: "Postgres", icon: Postgresql },
     { name: "Docker", icon: Docker },
-    { name: "Kubernetes", icon: Kubernetes },
     { name: "Java", icon: Java },
-    { name: "C#", icon: Csharp },
   ],
   navbar: [
     { href: "/", icon: HomeIcon, label: "Home" },
@@ -128,30 +122,6 @@ export const DATA = {
       description:
         "Developed end-to-end full-stack web applications with React, Next.js, and Node.js. Built robust role-based access control (RBAC), third-party API integrations, and event-driven logging solutions.",
     },
-    {
-      company: "Lime",
-      href: "https://li.me/",
-      badges: [],
-      location: "San Francisco, CA",
-      title: "Software Engineer",
-      logoUrl: "/lime.svg",
-      start: "January 2018",
-      end: "April 2018",
-      description:
-        "Proposed and implemented an internal Ruby API for sending/receiving commands to scooters over LTE networks. Developed a fully automated bike firmware update system to handle asynchronous distribution.",
-    },
-    {
-      company: "Mitre Media",
-      href: "https://mitremedia.com/",
-      badges: [],
-      location: "Toronto, ON",
-      title: "Software Engineer",
-      logoUrl: "/mitremedia.png",
-      start: "May 2017",
-      end: "August 2017",
-      description:
-        "Designed and implemented a robust password encryption and browser cookie storage system in Ruby on Rails. Leveraged the Yahoo finance API to develop the dividend.com equity screener.",
-    },
   ],
 
   education: [
@@ -170,22 +140,6 @@ export const DATA = {
       logoUrl: "/icons/karbala.svg",
       start: "2020",
       end: "2024",
-    },
-    {
-      school: "Cloud & Distributed Systems",
-      href: "https://www.linkedin.com/in/abulara98",
-      degree: "Microservices Architecture & Distributed Systems Specialization",
-      logoUrl: "/icons/cloud-dist.svg",
-      start: "2023",
-      end: "2024",
-    },
-    {
-      school: "Microsoft",
-      href: "https://learn.microsoft.com/",
-      degree: "Microsoft Certified Professional — C# & Distributed Systems Engineering",
-      logoUrl: "/icons/microsoft-csharp.svg",
-      start: "2023",
-      end: "2023",
     },
     {
       school: "Al-Kafeel Super Speciality Hospital",
@@ -315,14 +269,6 @@ export const DATA = {
           href: "https://www.hackerone.com",
         },
       ],
-    },
-    {
-      title: "API & Cloud Security Audits",
-      dates: "2020 - 2025",
-      location: "Remote",
-      description:
-        "Performed deep vulnerability assessments and penetration testing on distributed microservices, focusing on OWASP Top 10, JWT implementation defects, and rate-limiting enforcement.",
-      links: [],
     },
     {
       title: "CTF & Exploit Research Challenges",

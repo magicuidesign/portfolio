@@ -43,7 +43,7 @@ export default function AboutDossier() {
       title: "Distributed Systems & Cloud",
       highlight: "10x Throughput Scaling",
       description:
-        "Architecting fault-tolerant microservices, zero-copy high-throughput APIs, and asynchronous message-driven backends with Node.js, TypeScript, and Go.",
+        "Architecting fault-tolerant microservices, zero-copy high-throughput APIs, and asynchronous message-driven backends with Node.js and TypeScript.",
       icon: Cpu,
       color: "text-sky-400 bg-sky-500/10 border-sky-500/20",
       glow: "group-hover/p:border-sky-500/40",
