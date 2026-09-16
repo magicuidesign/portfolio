@@ -1,0 +1,29 @@
+<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="isrBg" x1="10" y1="10" x2="90" y2="90" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1e40af" />
+      <stop offset="0.5" stop-color="#1e3a8a" />
+      <stop offset="1" stop-color="#0f172a" />
+    </linearGradient>
+    <linearGradient id="starGrad" x1="20" y1="20" x2="80" y2="80" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#60a5fa" />
+      <stop offset="0.5" stop-color="#3b82f6" />
+      <stop offset="1" stop-color="#1d4ed8" />
+    </linearGradient>
+    <filter id="isrGlow" x="0" y="0" width="100" height="100" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#60a5fa" flood-opacity="0.6" />
+    </filter>
+  </defs>
+  <rect width="100" height="100" rx="50" fill="url(#isrBg)" />
+  <circle cx="50" cy="50" r="42" stroke="#60a5fa" stroke-width="1.8" />
+  <!-- Emergency Star of Life 6-pointed Cross -->
+  <g filter="url(#isrGlow)">
+    <rect x="44" y="22" width="12" height="56" rx="3" fill="url(#starGrad)" stroke="#93c5fd" stroke-width="1.5" />
+    <rect x="44" y="22" width="12" height="56" rx="3" fill="url(#starGrad)" stroke="#93c5fd" stroke-width="1.5" transform="rotate(60 50 50)" />
+    <rect x="44" y="22" width="12" height="56" rx="3" fill="url(#starGrad)" stroke="#93c5fd" stroke-width="1.5" transform="rotate(120 50 50)" />
+  </g>
+  <!-- Central Rod of Asclepius Snake / Staff -->
+  <line x1="50" y1="30" x2="50" y2="70" stroke="#fef08a" stroke-width="3" stroke-linecap="round" />
+  <path d="M47 36C53 40 53 44 47 48C41 52 41 56 47 60C53 64 53 68 47 70" stroke="#fef08a" stroke-width="2.5" stroke-linecap="round" fill="none" />
+</svg>
+

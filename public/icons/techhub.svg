@@ -1,0 +1,23 @@
+<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="hubBg" x1="10" y1="10" x2="90" y2="90" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#d97706" />
+      <stop offset="0.5" stop-color="#c2410c" />
+      <stop offset="1" stop-color="#451a03" />
+    </linearGradient>
+    <linearGradient id="codeGrad" x1="30" y1="30" x2="70" y2="70" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fef08a" />
+      <stop offset="0.5" stop-color="#fbbf24" />
+      <stop offset="1" stop-color="#f59e0b" />
+    </linearGradient>
+    <filter id="hubGlow" x="0" y="0" width="100" height="100" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#fbbf24" flood-opacity="0.6" />
+    </filter>
+  </defs>
+  <rect width="100" height="100" rx="50" fill="url(#hubBg)" />
+  <circle cx="50" cy="50" r="42" stroke="#fbbf24" stroke-width="1.5" stroke-opacity="0.4" />
+  <!-- Tech Hub Hexagon + Code Brackets -->
+  <rect x="25" y="25" width="50" height="50" rx="14" fill="#291404" stroke="#fbbf24" stroke-width="2.5" filter="url(#hubGlow)" />
+  <path d="M42 40L34 50L42 60M58 40L66 50L58 60M52 37L48 63" stroke="url(#codeGrad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+</svg>
+

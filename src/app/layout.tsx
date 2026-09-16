@@ -4,7 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { DATA } from "@/data/resume";
 import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Amiri } from "next/font/google";
 import "./globals.css";
 import { FlickeringGrid } from "@/components/magicui/flickering-grid";
 
@@ -18,6 +18,12 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
   variable: "--font-mono",
+});
+
+const amiri = Amiri({
+  subsets: ["arabic", "latin"],
+  weight: ["400", "700"],
+  variable: "--font-serif",
 });
 
 export const metadata: Metadata = {
@@ -67,12 +73,21 @@ export default function RootLayout({
         className={cn(
           "min-h-screen bg-background font-sans antialiased relative",
           geist.variable,
-          geistMono.variable
+          geistMono.variable,
+          amiri.variable
         )}
       >
-        <ThemeProvider attribute="class" defaultTheme="light">
+        <ThemeProvider attribute="class" defaultTheme="dark">
           <TooltipProvider delayDuration={0}>
-            <div className="absolute inset-0 top-0 left-0 right-0 h-[100px] overflow-hidden z-0">
+            {/* Cinematic Ambient Studio Lighting (Image 4 Aesthetic) */}
+            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+              <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[750px] h-[500px] bg-gradient-to-b from-sky-500/10 via-purple-500/5 to-transparent rounded-full blur-3xl opacity-70" />
+              <div className="absolute top-[35%] -left-40 w-[500px] h-[500px] bg-rose-500/5 rounded-full blur-3xl" />
+              <div className="absolute top-[60%] -right-40 w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-3xl" />
+              <div className="absolute top-[80%] left-1/4 w-[500px] h-[500px] bg-amber-500/5 rounded-full blur-3xl" />
+            </div>
+
+            <div className="absolute inset-0 top-0 left-0 right-0 h-[120px] overflow-hidden z-0 opacity-40 dark:opacity-25">
               <FlickeringGrid
                 className="h-full w-full"
                 squareSize={2}

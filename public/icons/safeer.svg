@@ -1,0 +1,25 @@
+<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="safBg" x1="10" y1="10" x2="90" y2="90" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#991b1b" />
+      <stop offset="0.5" stop-color="#7f1d1d" />
+      <stop offset="1" stop-color="#450a0a" />
+    </linearGradient>
+    <linearGradient id="safGold" x1="20" y1="20" x2="80" y2="80" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fde047" />
+      <stop offset="0.5" stop-color="#eab308" />
+      <stop offset="1" stop-color="#a16207" />
+    </linearGradient>
+    <filter id="safGlow" x="0" y="0" width="100" height="100" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#f87171" flood-opacity="0.6" />
+    </filter>
+  </defs>
+  <rect width="100" height="100" rx="50" fill="url(#safBg)" />
+  <circle cx="50" cy="50" r="42" stroke="url(#safGold)" stroke-width="1.8" />
+  <!-- Surgical Hospital Cross -->
+  <path d="M42 26H58V42H74V58H58V74H42V58H26V42H42V26Z" fill="#1c0707" stroke="url(#safGold)" stroke-width="2.5" filter="url(#safGlow)" />
+  <!-- ECG Life Pulse Line -->
+  <path d="M30 50H40L44 42L48 58L52 44L56 54L60 50H70" stroke="#fca5a5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+  <circle cx="50" cy="20" r="4" fill="#fde047" />
+</svg>
+

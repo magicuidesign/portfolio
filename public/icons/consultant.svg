@@ -1,0 +1,28 @@
+<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="consBg" x1="10" y1="10" x2="90" y2="90" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7c3aed" />
+      <stop offset="0.5" stop-color="#6d28d9" />
+      <stop offset="1" stop-color="#2e1065" />
+    </linearGradient>
+    <linearGradient id="diamondGrad" x1="25" y1="25" x2="75" y2="75" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#c084fc" />
+      <stop offset="0.5" stop-color="#a855f7" />
+      <stop offset="1" stop-color="#581c87" />
+    </linearGradient>
+    <filter id="consGlow" x="0" y="0" width="100" height="100" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#c084fc" flood-opacity="0.55" />
+    </filter>
+  </defs>
+  <rect width="100" height="100" rx="50" fill="url(#consBg)" />
+  <circle cx="50" cy="50" r="42" stroke="#c084fc" stroke-width="1.5" stroke-opacity="0.35" />
+  <!-- Consulting Diamond Prism -->
+  <path d="M50 22L76 50L50 78L24 50L50 22Z" fill="#1e1035" stroke="url(#diamondGrad)" stroke-width="3" filter="url(#consGlow)" />
+  <path d="M50 32L68 50L50 68L32 50L50 32Z" fill="url(#diamondGrad)" opacity="0.4" />
+  <circle cx="50" cy="50" r="7" fill="#ffffff" />
+  <circle cx="50" cy="22" r="3.5" fill="#e9d5ff" />
+  <circle cx="76" cy="50" r="3.5" fill="#e9d5ff" />
+  <circle cx="50" cy="78" r="3.5" fill="#e9d5ff" />
+  <circle cx="24" cy="50" r="3.5" fill="#e9d5ff" />
+</svg>
+

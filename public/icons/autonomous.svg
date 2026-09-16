@@ -1,0 +1,25 @@
+<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="autoBg" x1="10" y1="10" x2="90" y2="90" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0284c7" />
+      <stop offset="0.5" stop-color="#0369a1" />
+      <stop offset="1" stop-color="#082f49" />
+    </linearGradient>
+    <linearGradient id="autoCore" x1="30" y1="30" x2="70" y2="70" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#38bdf8" />
+      <stop offset="1" stop-color="#0284c7" />
+    </linearGradient>
+    <filter id="autoGlow" x="0" y="0" width="100" height="100" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#38bdf8" flood-opacity="0.6" />
+    </filter>
+  </defs>
+  <rect width="100" height="100" rx="50" fill="url(#autoBg)" />
+  <circle cx="50" cy="50" r="42" stroke="#38bdf8" stroke-width="1.5" stroke-opacity="0.4" stroke-dasharray="4 3" />
+  <!-- Autonomous Hex Core -->
+  <path d="M50 24L72 37V63L50 76L28 63V37L50 24Z" fill="#0b1329" stroke="#38bdf8" stroke-width="2.5" filter="url(#autoGlow)" />
+  <!-- Internal Circuit Nexus -->
+  <circle cx="50" cy="50" r="10" fill="url(#autoCore)" />
+  <circle cx="50" cy="50" r="5" fill="#ffffff" />
+  <path d="M50 25V36M50 64V75M29 38L39 44M61 56L71 62M29 62L39 56M61 44L71 38" stroke="#7dd3fc" stroke-width="2" stroke-linecap="round" />
+</svg>
+

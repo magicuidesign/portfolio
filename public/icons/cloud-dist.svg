@@ -1,0 +1,26 @@
+<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="cldBg" x1="10" y1="10" x2="90" y2="90" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0284c7" />
+      <stop offset="0.5" stop-color="#0f172a" />
+      <stop offset="1" stop-color="#020617" />
+    </linearGradient>
+    <filter id="cldGlow" x="0" y="0" width="100" height="100" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#38bdf8" flood-opacity="0.6" />
+    </filter>
+  </defs>
+  <rect width="100" height="100" rx="50" fill="url(#cldBg)" />
+  <circle cx="50" cy="50" r="42" stroke="#38bdf8" stroke-width="1.5" stroke-opacity="0.5" />
+  <!-- Distributed Nodes Network -->
+  <path d="M50 28L68 40V60L50 72L32 60V40L50 28Z" stroke="#38bdf8" stroke-width="1.8" stroke-dasharray="3 3" />
+  <circle cx="50" cy="28" r="5" fill="#38bdf8" filter="url(#cldGlow)" />
+  <circle cx="68" cy="40" r="5" fill="#0ea5e9" filter="url(#cldGlow)" />
+  <circle cx="68" cy="60" r="5" fill="#0284c7" filter="url(#cldGlow)" />
+  <circle cx="50" cy="72" r="5" fill="#38bdf8" filter="url(#cldGlow)" />
+  <circle cx="32" cy="60" r="5" fill="#0284c7" filter="url(#cldGlow)" />
+  <circle cx="32" cy="40" r="5" fill="#0ea5e9" filter="url(#cldGlow)" />
+  <!-- Central Hub -->
+  <circle cx="50" cy="50" r="8" fill="#ffffff" filter="url(#cldGlow)" />
+  <path d="M50 28V42M68 40L56 46M68 60L56 54M50 72V58M32 60L44 54M32 40L44 46" stroke="#bae6fd" stroke-width="2" />
+</svg>
+
